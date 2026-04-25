@@ -4,37 +4,33 @@ Last updated: 2026-04-25
 
 ## Current Phase
 
-Godot 4 minimal runnable demo is in progress and playable enough for rule testing.
+The Godot 4 prototype is playable and has the core MVP loop, JSON level loading, generated fallback levels, placeholder art, debug tools, and a basic in-game editor.
 
-Current focus: JSON level loading has been added and needs F6 runtime verification.
+Current focus is paused for cross-device handoff. No new gameplay feature is being developed in this documentation phase.
+
+## Repository
+
+- GitHub: `https://github.com/xingjiacheng175-maker/longcrush-car-demo.git`
+- Branch used so far: `main`
+- Godot project root: repository root, where `project.godot` lives.
 
 ## Key Files
 
-- `AGENTS.md`: project collaboration rules and session-start instructions.
-- `docs/design_summary.md`: gameplay and old demo summary.
+- `AGENTS.md`: collaboration rules and new-session instructions.
 - `docs/project_status.md`: current progress and next steps.
-- `gamedesign.pdf`: original design document.
-- `old_demo_code/`: previous React/Vite demo.
-- `new-game-project/project.godot`: Godot project config.
-- `new-game-project/scenes/Main.tscn`: main scene.
-- `new-game-project/scripts/Main.gd`: current prototype implementation.
-- `new-game-project/assets/placeholders/`: generated placeholder art assets.
+- `docs/design_summary.md`: gameplay and old demo summary.
+- `docs/handoff.md`: cross-device / new-session handoff guide.
+- `project.godot`: Godot project config.
+- `scenes/Main.tscn`: main scene.
+- `scripts/Main.gd`: current prototype implementation.
+- `levels/levels.json`: ordered level list.
+- `levels/level_001.json`: first hand-authored JSON level.
+- `levels/level_002.json`: second hand-authored JSON level.
+- `assets/placeholders/`: generated placeholder art assets.
 
-## Completed So Far
+## Implemented Features
 
-### Analysis
-
-- Read `gamedesign.pdf`.
-- Read and analyzed `old_demo_code`.
-- Confirmed the core game is a grid-based taxi/path-building puzzle.
-- Confirmed Godot 4 + GDScript as the target implementation.
-- Confirmed JSON should be preferred for level data in later phases.
-
-### Godot MVP
-
-Implemented in `new-game-project`.
-
-Current features:
+### Core Gameplay
 
 - Main Godot scene.
 - Programmatic UI.
@@ -43,233 +39,202 @@ Current features:
 - Goal tile.
 - Road-piece selection.
 - Shape rotation with `R`.
-- Road placement from powered/connected road.
-- Fuel cost: 1 fuel per placement.
-- Initial fuel: 3.
-- Cash/fuel cells.
-- Cash must be paved over to be collected.
-- Cash collection when paved cash joins the powered network.
-- Win condition: connect to goal.
-- Loss condition: fuel reaches 0 before connecting to goal.
-- Restart level.
-- Next level after winning.
-- Automatic level generation.
-- JSON level loading for fixed levels.
-- Ordered level list loading through `levels/levels.json`.
-- Auto-generation fallback when a JSON level file is missing or invalid.
-- Basic debug panel toggled with `D`.
-- Reload current level button.
-- Basic in-game level editor toggled with `E`.
-- Blocks/walls as hard obstacles.
-- Blocks cannot be paved over.
 - Hover preview:
   - Yellow = valid placement.
   - Red = invalid placement.
-- Short grid labels to avoid layout jitter:
-  - `T` = taxi/start.
-  - `G` = goal.
-  - `$N` = unpaved cash/fuel.
-  - `R` = road.
-  - `R $N` = paved cash not yet collected.
-  - `R OK` = paved cash collected.
-  - `X` = block/wall.
+- Road placement from the powered/connected road network.
+- Fuel cost: `1` fuel per placement.
+- Initial fuel: currently `3`.
+- Win condition: connect to goal.
+- Loss condition: fuel reaches `0` before connecting to goal.
+- Restart level.
+- Next level after winning.
 
-### Auto Generation
+### Reward / Cash Rule
 
-Current automatic generation includes:
+- Reward cells can be paved over.
+- Unpaved reward cells are not collected by adjacent roads.
+- Paved reward cells are collected only after joining the powered network.
+- Current prototype still treats reward gain in the fuel/cash loop; exact money-vs-fuel separation is not finalized.
 
-- Level configs with increasing grid size, cash count, and wall count.
-- A hidden generated route from start to goal.
-- Blocks are prevented from spawning on the hidden route.
-- Cash is preferentially placed along the hidden route.
-- Each road-piece offer includes:
-  - a horizontal 2-cell piece,
-  - a vertical 2-cell piece,
-  - one random piece.
+### Obstacles
 
-This is intended to make each generated level structurally solvable with basic straight pieces, although it is not yet a full formal solver.
+- Blocks/walls are hard obstacles.
+- Road pieces cannot cover blocks.
+- Generated levels avoid putting blocks on the hidden generated route.
 
-### JSON Level Loading
+### Level Loading
 
-Added the first hand-authored level file:
+- JSON level loading is implemented.
+- Ordered level sequence is controlled by `levels/levels.json`.
+- `levels.json` entries can be:
+  - A JSON path, for example `res://levels/level_001.json`.
+  - The string `"generated"`.
+- If `levels.json` is missing, the game falls back to numeric lookup with `res://levels/level_%03d.json`.
+- If a JSON level is missing or invalid, the game falls back to a generated level.
 
-- `new-game-project/levels/level_001.json`
-- `new-game-project/levels/level_002.json`
-- `new-game-project/levels/levels.json`
-
-Current JSON fields:
-
-- `id`
-- `name`
-- `width`
-- `height`
-- `initial_fuel`
-- `start`: `{ "x": number, "y": number }`
-- `goal`: `{ "x": number, "y": number }`
-- `cash`: array of `{ "x": number, "y": number, "value": number }`
-- `blocks`: array of `{ "x": number, "y": number }`
-
-`Main.gd` now attempts to load `res://levels/level_%03d.json` for the current level. If the file does not exist or is invalid, it falls back to the existing automatic generator.
-
-`levels.json` now defines the level order. Entries can be JSON paths or the string `"generated"`.
-
-Current list:
+Current configured level order:
 
 1. `res://levels/level_001.json`
 2. `res://levels/level_002.json`
 3. `generated`
 
-If `levels.json` is missing, the game falls back to numeric lookup with `res://levels/level_%03d.json`.
+### Auto Generation
 
-Only square levels are supported for now because the current board code uses one `grid_size`.
+Current generated levels include:
 
-### Debug Tools
+- Level configs with increasing grid size, cash count, and wall count.
+- A hidden generated route from start to goal.
+- Blocks prevented from spawning on the hidden route.
+- Cash preferentially placed along the hidden route.
+- Road-piece offers that always include:
+  - one horizontal 2-cell piece,
+  - one vertical 2-cell piece,
+  - one random piece.
 
-Added a lightweight debug panel in `Main.gd`.
-
-The right-side control panel is wrapped in a vertical `ScrollContainer`, so debug information remains reachable on smaller windows.
-
-Controls:
-
-- Press `D` to show or hide the debug panel.
-- Click `Reload Level` to reload the current level.
-
-Debug panel currently shows:
-
-- Level source: `json` or `generated`.
-- Level path or `auto-generated`.
-- Grid size.
-- Start and goal coordinates.
-- Current fuel and initial fuel.
-- Current status.
-- Selected road piece id.
-- Cash collected / total cash.
-- Block count.
-- Powered cell count.
-- Generated hidden route cell count.
-
-Debug board overlays:
-
-- Blue border: powered/connected cell.
-- Purple border: generated hidden route cell.
-
-For JSON levels, hidden route cells are empty because the hidden route is only generated for auto-generated levels.
-
-### Basic Level Editor
-
-Added a lightweight in-game editor in `Main.gd`.
-
-Controls:
-
-- Press `E` to enter or exit editor mode.
-- Pick a brush in the right-side editor panel.
-- Click cells on the board to paint.
-- Press `E` again to return to play mode and test the edited board.
-
-Supported brushes:
-
-- Ground
-- Cash
-- Block
-- Start
-- Goal
-
-Editor behavior:
-
-- Start and goal are unique. Placing a new one clears the previous one.
-- Start and goal cannot overlap.
-- Cash uses default value `2`.
-- Painting resets temporary play state such as paved roads, powered flags, and collected cash.
-- The editor panel displays the current board as JSON.
-- `Copy JSON` copies the current board JSON to the system clipboard.
-
-Limitations:
-
-- The editor does not save directly to `res://levels/*.json`.
-- Board size and initial fuel are not editable in UI yet.
-- Cash value is fixed at `2` in the editor UI.
-- No undo/redo.
+This gives generated levels a structural solution path, although it is not a full formal solver.
 
 ### Placeholder Art Assets
 
-Generated and added a stylized top-down asset set inspired by bright European casual traffic puzzle games.
+Stylized top-down placeholder assets were generated and added under `assets/placeholders/`:
 
-Files added under `new-game-project/assets/placeholders/`:
+- `traffic_tiles_sheet.png`
+- `ground.png`
+- `road.png`
+- `road_powered.png`
+- `taxi_start.png`
+- `goal.png`
+- `cash.png`
+- `cash_road.png`
+- `cash_collected.png`
+- `block.png`
 
-- `traffic_tiles_sheet.png`: original generated 3x3 sprite sheet.
-- `ground.png`: grass/ground tile.
-- `road.png`: asphalt road tile.
-- `road_powered.png`: powered/glowing road tile.
-- `taxi_start.png`: yellow taxi start tile.
-- `goal.png`: destination marker tile.
-- `cash.png`: unpaved cash/fuel reward tile.
-- `cash_road.png`: paved cash road tile.
-- `cash_collected.png`: collected cash road tile.
-- `block.png`: construction barrier/block tile.
+Road-related placeholder art was simplified into direction-neutral asphalt blocks so the prototype does not need separate straight/corner road art yet.
 
-`Main.gd` now loads these PNGs and uses them as button icons for board cells. Grid text labels are no longer the main visual; cell details remain available through tooltips.
+### Debug Tools
 
-Road-related placeholder art was simplified after testing:
+- Press `D` to show or hide debug information.
+- Right panel uses scrolling so debug text remains reachable.
+- `Reload Level` button reloads the current level.
+- Debug panel shows:
+  - level source,
+  - level path or generated marker,
+  - grid size,
+  - start and goal coordinates,
+  - current fuel and initial fuel,
+  - status,
+  - selected road piece id,
+  - cash collected / total cash,
+  - block count,
+  - powered cell count,
+  - generated hidden route cell count.
+- Debug board overlays:
+  - Blue border = powered/connected cell.
+  - Purple border = generated hidden route cell.
 
-- `road.png` is now a direction-neutral asphalt square.
-- `road_powered.png` is now a direction-neutral glowing asphalt square.
-- `cash_road.png` is now a direction-neutral asphalt square with a coin.
-- `cash_collected.png` is now a direction-neutral glowing asphalt square with a coin and check mark.
-- Hover preview hides cell icons temporarily and shows yellow/red color blocks so the placement area remains readable.
+### Basic Level Editor
+
+- Press `E` to enter or exit editor mode.
+- Editor panel is shown in the right-side scroll area.
+- Supported brushes:
+  - Ground
+  - Cash
+  - Block
+  - Start
+  - Goal
+- Click board cells to paint.
+- Start and goal are unique; placing one clears the previous one.
+- Cash default value is currently `2`.
+- Painting resets temporary play state such as roads, powered flags, and collected rewards.
+- `Copy JSON` copies the current board JSON to the clipboard.
+- Press `E` again to return to play mode and test the edited board.
 
 ## Known Limitations
 
-- Level editor exists, but it is MVP-only and does not write files directly.
-- Debug tools are basic and may need more controls later.
+- Editor cannot directly save files into `res://levels/`.
+- Editor does not yet support board size changes.
+- Editor does not yet support initial fuel editing.
+- Editor does not yet support custom cash values.
+- Editor has no undo/redo.
+- No direct UI for editing `levels/levels.json`.
+- Only 2 hand-authored JSON levels are currently present; the third entry is generated.
+- No formal solver that simulates every possible road-piece sequence.
 - No saved random seed or replay.
-- No formal solver that simulates every road-piece sequence.
-- UI is still placeholder-only.
-- Placeholder images are AI-generated and may need later cleanup, resizing, or replacement with final art.
-- Cash value is currently shown in tooltip rather than directly over the tile art.
-- Godot CLI was not available in the current Codex environment, so runtime validation depends on user F6 testing in the Godot editor.
-- Current implementation is mostly concentrated in `Main.gd`; this is acceptable for the MVP but should be split once JSON and editor work begins.
+- Placeholder art is good enough for a demo but not final art.
+- Cash value is mostly conveyed through tooltip/logic rather than polished UI.
+- Godot CLI was not available in the Codex environment, so runtime validation has relied on user F6 testing in the Godot editor.
+- Implementation is mostly concentrated in `scripts/Main.gd`; acceptable for MVP, but may need splitting later.
 
 ## Current User-Confirmed Rules
 
 - Use Godot 4 and GDScript.
+- Prefer JSON for levels.
 - Use placeholder visuals for now.
-- Initial fuel: 3.
-- Road-piece placement cost: 1 fuel.
+- Initial fuel: `3`.
+- Road-piece placement cost: `1` fuel.
 - Victory: connect to goal.
-- Cash must be paved over to collect.
+- Cash/reward must be paved over to collect.
 - Unpaved cash is not collected by adjacent road.
 - Walls/blocks are the primary path restriction.
-- Level editor is a later feature.
-- Automatic generation can remain until the core gameplay loop is stable.
+- Generated levels may remain until the core gameplay and editor flow are stable.
+- Collaboration docs should be kept in GitHub for switching between home Windows and company Mac.
 
-## Pending Confirmation / Open Questions
+## Open Questions
 
-- Whether score should represent money only, fuel only, or both.
-- Whether fuel and money should become separate resources.
-- Whether the hidden generated route should be visible in debug mode later.
-- Whether level progression should use a hand-authored level list or continue numeric JSON lookup.
-- Whether route solvability should eventually be verified by a real solver.
-- Whether the visual theme should remain symbolic for a while or move toward taxi/city placeholder art next.
+- Should money and fuel become separate resources?
+- Should the player earn cash only for score while fuel remains a separate constraint?
+- Should generated levels eventually use a real solver?
+- Should editor exports save directly to project files, or stay clipboard-based for safety?
+- Should level order be edited in-game, or manually through `levels/levels.json`?
+- When should `scripts/Main.gd` be split into smaller files?
 
-## Recommended Next Steps
+## Recommended Next Development Phase
 
-Before continuing development in a new session:
+The most practical next phase is **Level Editor V2**.
 
-1. Read `AGENTS.md`.
-2. Read `docs/design_summary.md`.
-3. Read this file.
-4. Ask the user what to do next.
+Suggested scope:
 
-Possible next development phases:
+- Add editor controls for board size.
+- Add editor control for initial fuel.
+- Add editor control for cash value.
+- Add simple validation:
+  - exactly one start,
+  - exactly one goal,
+  - start and goal inside board,
+  - blocks/cash do not overlap start or goal.
+- Add export assistance:
+  - continue supporting `Copy JSON`,
+  - optionally save exported JSON to `user://exported_levels/`,
+  - add a `Copy levels.json entry` or similar helper.
+- Document how to configure 5 levels from the current 3-level setup.
 
-1. Verify the latest F6 runtime behavior and fix any Godot errors.
-2. Add more JSON levels and configure them in `levels/levels.json`.
-3. Improve the editor with board size, initial fuel, cash value controls, and direct save/export workflow.
-4. Add a fuller debug/validation tool for solvability checks.
+Alternative next phases:
+
+- Add more JSON levels manually.
+- Add a lightweight solvability check.
+- Improve placeholder UI polish.
+
+## How To Test Current Build
+
+Manual Godot editor test:
+
+1. Open the project folder containing `project.godot`.
+2. Run the main scene with `F6`.
+3. Verify level 1 loads from JSON.
+4. Place road pieces until the goal is connected.
+5. Confirm the next level button advances to level 2.
+6. Confirm level 3 is generated.
+7. Press `D` and verify debug info scrolls.
+8. Press `E`, paint a small edit, use `Copy JSON`, then return to play mode.
 
 ## Phase Completion Rule
 
-After every future phase, update this file with:
+After every future completed phase, update:
+
+- `docs/project_status.md`
+- `docs/handoff.md`
+
+Each update should include:
 
 - Files changed.
 - Current working features.

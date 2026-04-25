@@ -1,73 +1,71 @@
 # Design Summary
 
+Last updated: 2026-04-25
+
 ## Source Materials
 
-- `gamedesign.pdf`: original design document for "钱路漫漫".
+- `gamedesign.pdf`: original game design document for "钱路漫漫".
 - `old_demo_code/`: previous React/Vite demo from Google AI Studio.
-- `new-game-project/`: Godot 4 reimplementation.
+- Current target: Godot 4 + GDScript.
+
+The source PDF and old demo may not be included in the GitHub repository. This document preserves the usable summary for future sessions.
 
 ## Core Fantasy
 
-The player is a taxi driver who wants to earn more money by taking profitable detours while still delivering the passenger before fuel runs out.
+The player is a taxi driver who wants to earn more money by taking profitable detours while still reaching the destination before fuel runs out.
 
 The theme is "growth":
 
-- Road growth: the road network expands from the starting point.
-- Money growth: the player earns by routing through cash/fuel points.
-- Moral growth: mentioned in the design document but not implemented yet.
+- Road growth: the road network expands from the taxi/start point.
+- Money growth: the player earns by routing through reward cells.
+- Moral growth: mentioned in the design document but not implemented in the current prototype.
 
 ## Core Gameplay
 
 The game is a grid-based path-building puzzle.
 
-The player:
+Player flow:
 
-1. Starts from a taxi/start tile.
-2. Chooses one of several road-piece shapes.
-3. Rotates the selected piece.
-4. Places it on the grid so it connects to the existing powered road network.
-5. Spends 1 fuel per placement.
-6. Routes through cash/fuel cells to gain more fuel/cash.
-7. Wins by connecting the start network to the goal before fuel runs out.
+1. Start from a taxi/start tile.
+2. Select one of several offered road pieces.
+3. Rotate the selected piece with `R`.
+4. Hover over the grid to preview placement.
+5. Place the piece so it connects to the powered road network.
+6. Spend `1` fuel for each road placement.
+7. Pave over reward cells to gain more fuel/cash.
+8. Win by connecting the road network to the goal.
 
 ## Current Confirmed Rules
 
-- Initial fuel is `3`.
+- Initial fuel is currently `3`.
 - Each road-piece placement costs `1` fuel.
-- Victory condition for the current MVP: connect to the goal.
-- Loss condition: fuel reaches `0` before the goal is connected.
-- Start and goal may be fixed in the first version.
-- Level JSON and level editor are later phases.
-- Current demo may use automatic level generation first.
+- Current victory condition: connect to the goal.
+- Current loss condition: fuel reaches `0` before the goal is connected.
+- Start and goal are supported by JSON and editor data.
+- Walls/blocks are hard obstacles.
+- Road can be placed on reward cells.
+- Road cannot be placed on wall/block cells.
+- User confirmed that detouring for money is the core experience.
 
 ## Fuel / Cash Rule
 
-The rule has been adjusted from the original adjacency version.
+The reward rule was changed during testing.
 
 Current confirmed rule:
 
-- `CASH` cells can be paved over.
-- Unpaved `CASH` is not collected by adjacent road.
-- The player must place road onto `CASH`.
+- Unpaved `CASH` cells are not collected by adjacent roads.
+- The player must place road onto a `CASH` cell.
 - A paved `CASH` cell becomes part of the road network.
-- Once the paved `CASH` cell is connected to the taxi/start network, it is collected.
+- Once that paved reward cell is connected to the taxi/start powered network, it is collected.
 
-Current visual shorthand:
-
-- `T`: taxi/start.
-- `G`: goal.
-- `$2`: unpaved cash/fuel worth 2.
-- `R`: road.
-- `R $2`: paved cash/fuel not yet collected.
-- `R OK`: paved and collected cash/fuel.
-- `X`: wall/block.
+Current prototype treats reward value as fuel/cash gain in the same flow. Whether money and fuel should become separate resources remains open.
 
 ## Walls / Blocks
 
-- `BLOCK` / `X` cells are hard obstacles.
+- `BLOCK` cells are hard obstacles.
 - Road pieces cannot cover blocks.
 - Hover preview should show invalid placement in red when covering a block.
-- Current automatic generation avoids placing blocks on a hidden guaranteed route.
+- Auto-generated levels avoid placing blocks on the hidden generated route.
 
 ## Old Demo Logic Worth Preserving
 
@@ -79,7 +77,7 @@ From `old_demo_code/gameLogic.ts` and `old_demo_code/App.tsx`:
 - Shape rotation with coordinate normalization.
 - Placement validation from the existing powered network.
 - BFS/flood-fill powered connection check from the start.
-- Fuel/cash collection once a special cell joins the powered network.
+- Reward collection once a special cell joins the powered network.
 - Level configs with size, target, and obstacle counts.
 - Hover preview concept.
 
@@ -87,18 +85,21 @@ From `old_demo_code/gameLogic.ts` and `old_demo_code/App.tsx`:
 
 - React component structure and browser DOM rendering.
 - Tailwind / Font Awesome / CSS visuals.
-- Monolithic `App.tsx` state layout.
-- Random generation without JSON or seed control.
-- Google GenAI import, which is not part of the core gameplay.
+- Monolithic browser state layout.
 - Web-specific input handling.
+- Google GenAI import, which is not part of the core gameplay.
+- Random generation without JSON, export, or seed control.
 
 ## Godot Reimplementation Direction
 
-Current Godot MVP is intentionally simple:
+The current Godot prototype intentionally stays simple:
 
 - One main scene.
 - One main script.
 - Programmatic UI.
-- Placeholder visuals using colored grid buttons and short text labels.
+- JSON level files.
+- Basic generated levels.
+- Basic editor and debug tools.
+- Placeholder top-down assets.
 
-The next architectural step should be JSON level loading, not a large refactor.
+The next architecture step should be driven by concrete pain points, especially level editing and level validation, rather than a large early refactor.
