@@ -1,0 +1,1246 @@
+extends Control
+
+const CELL_EMPTY := "empty"
+const CELL_START := "start"
+const CELL_END := "end"
+const CELL_PATH := "path"
+const CELL_FUEL := "fuel"
+const CELL_ROCK := "rock"
+
+const INITIAL_FUEL := 3
+const FUEL_TO_SCORE_RATIO := 10
+const LEVEL_LIST_PATH := "res://levels/levels.json"
+const LEVEL_PATH_TEMPLATE := "res://levels/level_%03d.json"
+
+const LEVEL_CONFIGS := [
+	{"level": 1, "size": 6, "fuel_count": 4, "rocks": 2},
+	{"level": 2, "size": 8, "fuel_count": 6, "rocks": 7},
+	{"level": 3, "size": 10, "fuel_count": 8, "rocks": 14},
+	{"level": 4, "size": 10, "fuel_count": 10, "rocks": 20},
+	{"level": 5, "size": 10, "fuel_count": 12, "rocks": 26},
+]
+
+const SHAPE_LIBRARY := [
+	{"id": "2-1", "cells": [{"x": 0, "y": 0}, {"x": 1, "y": 0}]},
+	{"id": "2-2", "cells": [{"x": 0, "y": 0}, {"x": 0, "y": 1}]},
+	{"id": "3-1", "cells": [{"x": 0, "y": 0}, {"x": 1, "y": 0}, {"x": 2, "y": 0}]},
+	{"id": "3-2", "cells": [{"x": 0, "y": 0}, {"x": 1, "y": 0}, {"x": 1, "y": 1}]},
+	{"id": "3-3", "cells": [{"x": 0, "y": 0}, {"x": 0, "y": 1}, {"x": 1, "y": 1}]},
+	{"id": "4-1", "cells": [{"x": 0, "y": 0}, {"x": 1, "y": 0}, {"x": 2, "y": 0}, {"x": 3, "y": 0}]},
+	{"id": "4-2", "cells": [{"x": 0, "y": 0}, {"x": 1, "y": 0}, {"x": 0, "y": 1}, {"x": 1, "y": 1}]},
+	{"id": "4-3", "cells": [{"x": 0, "y": 0}, {"x": 1, "y": 0}, {"x": 2, "y": 0}, {"x": 1, "y": 1}]},
+	{"id": "4-4", "cells": [{"x": 0, "y": 0}, {"x": 0, "y": 1}, {"x": 1, "y": 1}, {"x": 1, "y": 2}]},
+]
+
+var rng := RandomNumberGenerator.new()
+var grid: Array = []
+var grid_size := 6
+var current_level := 1
+var fuel := INITIAL_FUEL
+var initial_fuel := INITIAL_FUEL
+var score := 0
+var status := "playing"
+var current_shapes: Array = []
+var selected_shape_index := -1
+var message := ""
+var hover_origin := Vector2i(-1, -1)
+var generated_route_cells: Dictionary = {}
+var tile_textures: Dictionary = {}
+var start_pos: Vector2i = Vector2i(0, 0)
+var goal_pos: Vector2i = Vector2i(5, 5)
+var level_source: String = "generated"
+var level_path: String = ""
+var level_sequence: Array = []
+var current_level_entry: String = ""
+var debug_visible: bool = false
+var editor_mode: bool = false
+var editor_brush: String = CELL_ROCK
+
+var board_grid: GridContainer
+var pieces_container: VBoxContainer
+var level_label: Label
+var fuel_label: Label
+var score_label: Label
+var status_label: Label
+var message_label: Label
+var next_button: Button
+var debug_panel: PanelContainer
+var debug_label: Label
+var editor_panel: PanelContainer
+var editor_json_text: TextEdit
+
+
+func _ready() -> void:
+	rng.randomize()
+	_load_tile_textures()
+	_load_level_sequence()
+	_build_ui()
+	init_level()
+
+
+func _load_tile_textures() -> void:
+	tile_textures = {
+		"ground": load("res://assets/placeholders/ground.png"),
+		"road": load("res://assets/placeholders/road.png"),
+		"road_powered": load("res://assets/placeholders/road_powered.png"),
+		"taxi_start": load("res://assets/placeholders/taxi_start.png"),
+		"goal": load("res://assets/placeholders/goal.png"),
+		"cash": load("res://assets/placeholders/cash.png"),
+		"cash_road": load("res://assets/placeholders/cash_road.png"),
+		"cash_collected": load("res://assets/placeholders/cash_collected.png"),
+		"block": load("res://assets/placeholders/block.png"),
+	}
+
+
+func _load_level_sequence() -> void:
+	level_sequence = []
+	if not FileAccess.file_exists(LEVEL_LIST_PATH):
+		return
+
+	var file: FileAccess = FileAccess.open(LEVEL_LIST_PATH, FileAccess.READ)
+	if file == null:
+		push_warning("Could not open level list: %s" % LEVEL_LIST_PATH)
+		return
+
+	var parsed = JSON.parse_string(file.get_as_text())
+	if typeof(parsed) != TYPE_DICTIONARY:
+		push_warning("Invalid level list JSON: %s" % LEVEL_LIST_PATH)
+		return
+
+	var data: Dictionary = parsed
+	var entries = data.get("levels", [])
+	if not entries is Array:
+		push_warning("Level list missing array 'levels': %s" % LEVEL_LIST_PATH)
+		return
+
+	for entry in entries:
+		if entry is String:
+			level_sequence.append(entry)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		get_viewport().set_input_as_handled()
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_R:
+			rotate_selected_shape()
+		elif event.keycode == KEY_D:
+			_toggle_debug_panel()
+		elif event.keycode == KEY_E:
+			_toggle_editor_mode()
+
+
+func _build_ui() -> void:
+	var root := VBoxContainer.new()
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.add_theme_constant_override("separation", 12)
+	root.offset_left = 18
+	root.offset_top = 18
+	root.offset_right = -18
+	root.offset_bottom = -18
+	add_child(root)
+
+	var title := Label.new()
+	title.text = "Money Road: Taxi Detour Prototype"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 24)
+	root.add_child(title)
+
+	var hud := HBoxContainer.new()
+	hud.add_theme_constant_override("separation", 16)
+	root.add_child(hud)
+
+	level_label = _make_hud_label()
+	fuel_label = _make_hud_label()
+	score_label = _make_hud_label()
+	status_label = _make_hud_label()
+	hud.add_child(level_label)
+	hud.add_child(fuel_label)
+	hud.add_child(score_label)
+	hud.add_child(status_label)
+
+	var main_row := HBoxContainer.new()
+	main_row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	main_row.add_theme_constant_override("separation", 18)
+	root.add_child(main_row)
+
+	board_grid = GridContainer.new()
+	board_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	board_grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	board_grid.add_theme_constant_override("h_separation", 4)
+	board_grid.add_theme_constant_override("v_separation", 4)
+	board_grid.mouse_exited.connect(_on_board_mouse_exited)
+	main_row.add_child(board_grid)
+
+	var side_scroll := ScrollContainer.new()
+	side_scroll.custom_minimum_size = Vector2(250, 0)
+	side_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	side_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	main_row.add_child(side_scroll)
+
+	var side_panel := VBoxContainer.new()
+	side_panel.custom_minimum_size = Vector2(230, 0)
+	side_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	side_panel.add_theme_constant_override("separation", 10)
+	side_scroll.add_child(side_panel)
+
+	var pieces_title := Label.new()
+	pieces_title.text = "Road Pieces"
+	pieces_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	side_panel.add_child(pieces_title)
+
+	pieces_container = VBoxContainer.new()
+	pieces_container.add_theme_constant_override("separation", 8)
+	side_panel.add_child(pieces_container)
+
+	var rotate_button := Button.new()
+	rotate_button.text = "Rotate [R]"
+	rotate_button.pressed.connect(rotate_selected_shape)
+	side_panel.add_child(rotate_button)
+
+	var restart_button := Button.new()
+	restart_button.text = "Restart Level"
+	restart_button.pressed.connect(init_level)
+	side_panel.add_child(restart_button)
+
+	var reload_button := Button.new()
+	reload_button.text = "Reload Level"
+	reload_button.pressed.connect(init_level)
+	side_panel.add_child(reload_button)
+
+	next_button = Button.new()
+	next_button.text = "Next Generated Level"
+	next_button.pressed.connect(_on_next_level_pressed)
+	side_panel.add_child(next_button)
+
+	message_label = Label.new()
+	message_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	message_label.custom_minimum_size = Vector2(220, 0)
+	message_label.text = ""
+	side_panel.add_child(message_label)
+
+	debug_panel = PanelContainer.new()
+	debug_panel.visible = false
+	side_panel.add_child(debug_panel)
+
+	var debug_box := VBoxContainer.new()
+	debug_box.add_theme_constant_override("separation", 6)
+	debug_panel.add_child(debug_box)
+
+	var debug_title := Label.new()
+	debug_title.text = "Debug [D]"
+	debug_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	debug_box.add_child(debug_title)
+
+	debug_label = Label.new()
+	debug_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	debug_label.custom_minimum_size = Vector2(220, 0)
+	debug_label.text = ""
+	debug_box.add_child(debug_label)
+
+	editor_panel = PanelContainer.new()
+	editor_panel.visible = false
+	side_panel.add_child(editor_panel)
+
+	var editor_box := VBoxContainer.new()
+	editor_box.add_theme_constant_override("separation", 6)
+	editor_panel.add_child(editor_box)
+
+	var editor_title := Label.new()
+	editor_title.text = "Editor [E]"
+	editor_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	editor_box.add_child(editor_title)
+
+	var editor_help := Label.new()
+	editor_help.text = "Paint current board, then copy JSON into a level file."
+	editor_help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	editor_box.add_child(editor_help)
+
+	var brush_row_1 := HBoxContainer.new()
+	brush_row_1.add_theme_constant_override("separation", 4)
+	editor_box.add_child(brush_row_1)
+	brush_row_1.add_child(_make_editor_brush_button("Ground", CELL_EMPTY))
+	brush_row_1.add_child(_make_editor_brush_button("Cash", CELL_FUEL))
+	brush_row_1.add_child(_make_editor_brush_button("Block", CELL_ROCK))
+
+	var brush_row_2 := HBoxContainer.new()
+	brush_row_2.add_theme_constant_override("separation", 4)
+	editor_box.add_child(brush_row_2)
+	brush_row_2.add_child(_make_editor_brush_button("Start", CELL_START))
+	brush_row_2.add_child(_make_editor_brush_button("Goal", CELL_END))
+
+	var copy_json_button := Button.new()
+	copy_json_button.text = "Copy JSON"
+	copy_json_button.pressed.connect(_copy_editor_json_to_clipboard)
+	editor_box.add_child(copy_json_button)
+
+	editor_json_text = TextEdit.new()
+	editor_json_text.custom_minimum_size = Vector2(220, 220)
+	editor_json_text.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
+	editor_json_text.editable = false
+	editor_box.add_child(editor_json_text)
+
+
+func _make_hud_label() -> Label:
+	var label := Label.new()
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 18)
+	return label
+
+
+func _make_editor_brush_button(label_text: String, brush: String) -> Button:
+	var button := Button.new()
+	button.text = label_text
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.pressed.connect(_set_editor_brush.bind(brush))
+	return button
+
+
+func init_level() -> void:
+	status = "playing"
+	selected_shape_index = -1
+	hover_origin = Vector2i(-1, -1)
+	current_shapes = _get_random_shapes(3)
+	var loaded_from_json: bool = _load_current_level_entry()
+	if not loaded_from_json:
+		_init_generated_level()
+	_update_powered_status()
+	_refresh_all()
+
+
+func _get_level_config(level: int) -> Dictionary:
+	if level <= LEVEL_CONFIGS.size():
+		return LEVEL_CONFIGS[level - 1]
+
+	var extra_level: int = level - LEVEL_CONFIGS.size()
+	return {
+		"level": level,
+		"size": 10,
+		"fuel_count": 12 + min(extra_level, 6),
+		"rocks": 26 + min(extra_level * 2, 10),
+	}
+
+
+func _load_current_level_entry() -> bool:
+	current_level_entry = _get_level_entry(current_level)
+	if current_level_entry == "" or current_level_entry == "generated":
+		return false
+	return _load_level_from_path(current_level_entry)
+
+
+func _get_level_entry(level: int) -> String:
+	var index: int = level - 1
+	if index >= 0 and index < level_sequence.size():
+		return String(level_sequence[index])
+	if level_sequence.is_empty():
+		return LEVEL_PATH_TEMPLATE % level
+	return "generated"
+
+
+func _load_level_from_json(level: int) -> bool:
+	var path: String = LEVEL_PATH_TEMPLATE % level
+	return _load_level_from_path(path)
+
+
+func _load_level_from_path(path: String) -> bool:
+	level_path = path
+	if not FileAccess.file_exists(path):
+		return false
+
+	var file: FileAccess = FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		push_warning("Could not open level JSON: %s" % path)
+		return false
+
+	var json_text := file.get_as_text()
+	var parsed = JSON.parse_string(json_text)
+	if typeof(parsed) != TYPE_DICTIONARY:
+		push_warning("Invalid level JSON: %s" % path)
+		return false
+
+	var level_data: Dictionary = parsed
+	if not _validate_level_data(level_data, path):
+		return false
+
+	level_source = "json"
+	grid_size = int(level_data["width"])
+	initial_fuel = int(level_data.get("initial_fuel", INITIAL_FUEL))
+	fuel = initial_fuel
+	start_pos = _point_from_dict(level_data["start"])
+	goal_pos = _point_from_dict(level_data["goal"])
+	generated_route_cells = {}
+	grid = _create_empty_grid(grid_size)
+	grid[start_pos.y][start_pos.x]["type"] = CELL_START
+	grid[goal_pos.y][goal_pos.x]["type"] = CELL_END
+
+	for cash_entry in level_data.get("cash", []):
+		if not cash_entry is Dictionary:
+			continue
+		var cash_data: Dictionary = cash_entry
+		var cash_point := _point_from_dict(cash_data)
+		if _is_in_bounds(cash_point.x, cash_point.y) and grid[cash_point.y][cash_point.x]["type"] == CELL_EMPTY:
+			_set_fuel(cash_point.x, cash_point.y, int(cash_data.get("value", 1)))
+
+	for block_entry in level_data.get("blocks", []):
+		if not block_entry is Dictionary:
+			continue
+		var block_data: Dictionary = block_entry
+		var block_point := _point_from_dict(block_data)
+		if _is_in_bounds(block_point.x, block_point.y) and grid[block_point.y][block_point.x]["type"] == CELL_EMPTY:
+			grid[block_point.y][block_point.x]["type"] = CELL_ROCK
+
+	message = "Loaded %s from JSON: %dx%d, fuel %d." % [
+		String(level_data.get("name", path)),
+		grid_size,
+		grid_size,
+		initial_fuel,
+	]
+	return true
+
+
+func _validate_level_data(level_data: Dictionary, path: String) -> bool:
+	var required_keys: Array[String] = ["width", "height", "start", "goal"]
+	for key in required_keys:
+		if not level_data.has(key):
+			push_warning("Level JSON missing '%s': %s" % [key, path])
+			return false
+
+	var width: int = int(level_data["width"])
+	var height: int = int(level_data["height"])
+	if width <= 1 or height <= 1:
+		push_warning("Level JSON has invalid size: %s" % path)
+		return false
+	if width != height:
+		push_warning("Only square levels are supported for now: %s" % path)
+		return false
+
+	var json_start := _point_from_dict(level_data["start"])
+	var json_goal := _point_from_dict(level_data["goal"])
+	if not _is_point_in_size(json_start, width) or not _is_point_in_size(json_goal, width):
+		push_warning("Level JSON start or goal is out of bounds: %s" % path)
+		return false
+	if json_start == json_goal:
+		push_warning("Level JSON start and goal overlap: %s" % path)
+		return false
+	return true
+
+
+func _point_from_dict(data: Dictionary) -> Vector2i:
+	return Vector2i(int(data.get("x", 0)), int(data.get("y", 0)))
+
+
+func _is_point_in_size(point: Vector2i, size: int) -> bool:
+	return point.x >= 0 and point.x < size and point.y >= 0 and point.y < size
+
+
+func _init_generated_level() -> void:
+	var config: Dictionary = _get_level_config(current_level)
+	level_source = "generated"
+	if current_level_entry == "":
+		current_level_entry = "generated"
+	level_path = current_level_entry
+	grid_size = int(config["size"])
+	initial_fuel = INITIAL_FUEL
+	fuel = initial_fuel
+	start_pos = Vector2i(0, 0)
+	goal_pos = Vector2i(grid_size - 1, grid_size - 1)
+	grid = _create_empty_grid(grid_size)
+	generated_route_cells = _generate_solution_route()
+	grid[start_pos.y][start_pos.x]["type"] = CELL_START
+	grid[goal_pos.y][goal_pos.x]["type"] = CELL_END
+	_place_rocks(int(config["rocks"]))
+	_place_fuels(int(config["fuel_count"]))
+	message = "Level %d generated: %dx%d, %d cash stops, %d blocks." % [
+		current_level,
+		grid_size,
+		grid_size,
+		int(config["fuel_count"]),
+		int(config["rocks"]),
+	]
+
+
+func _create_empty_grid(size: int) -> Array:
+	var rows := []
+	for y in range(size):
+		var row := []
+		for x in range(size):
+			row.append({
+				"x": x,
+				"y": y,
+				"type": CELL_EMPTY,
+				"powered": false,
+				"consumed": false,
+				"has_road": false,
+				"fuel_value": 0,
+			})
+		rows.append(row)
+	return rows
+
+
+func _place_rocks(count: int) -> void:
+	var placed := 0
+	var attempts := 0
+	while placed < count and attempts < count * 40 + 100:
+		attempts += 1
+		var x := rng.randi_range(0, grid_size - 1)
+		var y := rng.randi_range(0, grid_size - 1)
+		if grid[y][x]["type"] != CELL_EMPTY or _is_protected_generation_cell(x, y) or _is_route_cell(x, y):
+			continue
+		grid[y][x]["type"] = CELL_ROCK
+		if _has_non_rock_path():
+			placed += 1
+		else:
+			grid[y][x]["type"] = CELL_EMPTY
+
+
+func _place_fuels(count: int) -> void:
+	var placed := 0
+	for point in _get_route_fuel_points(count):
+		if placed < count and _is_in_bounds(point.x, point.y) and grid[point.y][point.x]["type"] == CELL_EMPTY:
+			_set_fuel(point.x, point.y, 2)
+			placed += 1
+
+	var attempts := 0
+	while placed < count and attempts < count * 30 + 50:
+		attempts += 1
+		var x := rng.randi_range(0, grid_size - 1)
+		var y := rng.randi_range(0, grid_size - 1)
+		if grid[y][x]["type"] == CELL_EMPTY and not _is_protected_generation_cell(x, y):
+			_set_fuel(x, y, rng.randi_range(1, 2))
+			placed += 1
+
+
+func _set_fuel(x: int, y: int, value: int) -> void:
+	grid[y][x]["type"] = CELL_FUEL
+	grid[y][x]["fuel_value"] = value
+	grid[y][x]["consumed"] = false
+	grid[y][x]["has_road"] = false
+
+
+func _is_protected_generation_cell(x: int, y: int) -> bool:
+	var distance_to_start: int = abs(x - start_pos.x) + abs(y - start_pos.y)
+	var distance_to_end: int = abs(x - goal_pos.x) + abs(y - goal_pos.y)
+	return distance_to_start <= 1 or distance_to_end <= 1
+
+
+func _generate_solution_route() -> Dictionary:
+	var route: Dictionary = {}
+	var position: Vector2i = start_pos
+	route[position] = true
+
+	while position != goal_pos:
+		var step_x: int = int(sign(goal_pos.x - position.x))
+		var step_y: int = int(sign(goal_pos.y - position.y))
+		if step_x != 0 and step_y != 0:
+			position += Vector2i(step_x, 0) if rng.randf() < 0.5 else Vector2i(0, step_y)
+		elif step_x != 0:
+			position += Vector2i(step_x, 0)
+		else:
+			position += Vector2i(0, step_y)
+		route[position] = true
+	return route
+
+
+func _is_route_cell(x: int, y: int) -> bool:
+	return generated_route_cells.has(Vector2i(x, y))
+
+
+func _get_route_fuel_points(count: int) -> Array[Vector2i]:
+	var route_points: Array[Vector2i] = []
+	for key in generated_route_cells.keys():
+		var route_point: Vector2i = key
+		route_points.append(route_point)
+	route_points.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
+		return a.x + a.y < b.x + b.y
+	)
+
+	var points: Array[Vector2i] = []
+	var min_gap: int = 2
+	var next_distance: int = 2
+	for point in route_points:
+		var distance: int = point.x + point.y
+		if distance <= 1 or distance >= (grid_size - 1) * 2:
+			continue
+		if distance >= next_distance:
+			points.append(point)
+			next_distance = distance + min_gap
+			if points.size() >= count:
+				break
+	return points
+
+
+func _has_non_rock_path() -> bool:
+	var start: Vector2i = start_pos
+	var target: Vector2i = goal_pos
+	var queue: Array[Vector2i] = [start]
+	var visited: Dictionary = {}
+	visited[start] = true
+	var directions: Array[Vector2i] = [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.DOWN, Vector2i.UP]
+
+	while not queue.is_empty():
+		var current: Vector2i = queue.pop_front()
+		if current == target:
+			return true
+		for direction in directions:
+			var next_pos: Vector2i = current + direction
+			if not _is_in_bounds(next_pos.x, next_pos.y):
+				continue
+			if visited.has(next_pos):
+				continue
+			if String(grid[next_pos.y][next_pos.x]["type"]) == CELL_ROCK:
+				continue
+			visited[next_pos] = true
+			queue.append(next_pos)
+	return false
+
+
+func _get_random_shapes(count: int) -> Array:
+	var shapes := []
+	var guaranteed_shapes: Array = [SHAPE_LIBRARY[0], SHAPE_LIBRARY[1]]
+	for i in range(min(count, guaranteed_shapes.size())):
+		var source: Dictionary = guaranteed_shapes[i]
+		shapes.append({
+			"id": "%s-safe-%d" % [source["id"], i],
+			"cells": _copy_points(source["cells"]),
+		})
+
+	for i in range(shapes.size(), count):
+		var source: Dictionary = SHAPE_LIBRARY[rng.randi_range(0, SHAPE_LIBRARY.size() - 1)]
+		shapes.append({
+			"id": "%s-%d" % [source["id"], i],
+			"cells": _copy_points(source["cells"]),
+		})
+	return shapes
+
+
+func _copy_points(points: Array) -> Array:
+	var copied := []
+	for point in points:
+		copied.append({"x": int(point["x"]), "y": int(point["y"])})
+	return copied
+
+
+func rotate_selected_shape() -> void:
+	if editor_mode:
+		return
+	if status != "playing" or selected_shape_index < 0:
+		return
+	current_shapes[selected_shape_index] = _rotate_shape(current_shapes[selected_shape_index])
+	message = "Rotated selected road piece."
+	_refresh_pieces()
+	_refresh_hud()
+
+
+func _rotate_shape(shape: Dictionary) -> Dictionary:
+	var rotated := []
+	for point in shape["cells"]:
+		rotated.append({"x": -int(point["y"]), "y": int(point["x"])})
+
+	var min_x := 999
+	var min_y := 999
+	for point in rotated:
+		min_x = min(min_x, int(point["x"]))
+		min_y = min(min_y, int(point["y"]))
+
+	var normalized := []
+	for point in rotated:
+		normalized.append({"x": int(point["x"]) - min_x, "y": int(point["y"]) - min_y})
+
+	return {"id": shape["id"], "cells": normalized}
+
+
+func _on_cell_pressed(x: int, y: int) -> void:
+	if editor_mode:
+		_paint_editor_cell(x, y)
+		return
+
+	if status != "playing":
+		return
+	if selected_shape_index < 0:
+		message = "Select a road piece first."
+		_refresh_hud()
+		return
+
+	var shape: Dictionary = current_shapes[selected_shape_index]
+	if not _is_placement_valid(shape, Vector2i(x, y)):
+		message = "Invalid placement. Extend from powered road and avoid blocks and the destination."
+		_refresh_hud()
+		return
+
+	for offset in shape["cells"]:
+		var cell_x := x + int(offset["x"])
+		var cell_y := y + int(offset["y"])
+		if grid[cell_y][cell_x]["type"] == CELL_EMPTY:
+			grid[cell_y][cell_x]["type"] = CELL_PATH
+			grid[cell_y][cell_x]["has_road"] = true
+		elif grid[cell_y][cell_x]["type"] == CELL_FUEL:
+			grid[cell_y][cell_x]["has_road"] = true
+
+	fuel -= 1
+	_update_powered_status()
+	var gained := _harvest_connected_fuel()
+	if gained > 0:
+		fuel += gained
+		message = "Collected %d fuel by driving through cash stops." % gained
+	else:
+		message = "Road extended. Keep the taxi moving."
+
+	_update_powered_status()
+	if bool(grid[goal_pos.y][goal_pos.x]["powered"]):
+		status = "won"
+		selected_shape_index = -1
+		hover_origin = Vector2i(-1, -1)
+		score += fuel * FUEL_TO_SCORE_RATIO + 100
+		message = "Route complete. Passenger delivered. Press Next Level to generate a harder route."
+	elif fuel <= 0:
+		fuel = 0
+		status = "lost"
+		selected_shape_index = -1
+		hover_origin = Vector2i(-1, -1)
+		message = "Out of fuel before reaching the destination."
+	else:
+		current_shapes = _get_random_shapes(3)
+		selected_shape_index = -1
+		hover_origin = Vector2i(-1, -1)
+
+	_refresh_all()
+
+
+func _is_placement_valid(shape: Dictionary, origin: Vector2i) -> bool:
+	var touches_powered_road := false
+	var adds_new_road := false
+	for offset in shape["cells"]:
+		var x := origin.x + int(offset["x"])
+		var y := origin.y + int(offset["y"])
+		if not _is_in_bounds(x, y):
+			return false
+
+		var cell: Dictionary = grid[y][x]
+		var cell_type := String(cell["type"])
+		if cell_type == CELL_ROCK or cell_type == CELL_END:
+			return false
+		if cell_type == CELL_EMPTY or (cell_type == CELL_FUEL and not bool(cell["has_road"])):
+			adds_new_road = true
+		if bool(cell["powered"]) and _is_cell_power_connectable(cell):
+			touches_powered_road = true
+
+	return touches_powered_road and adds_new_road
+
+
+func _update_powered_status() -> void:
+	for row in grid:
+		for cell in row:
+			cell["powered"] = false
+
+	var queue: Array[Vector2i] = [start_pos]
+	grid[start_pos.y][start_pos.x]["powered"] = true
+	var directions: Array[Vector2i] = [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.DOWN, Vector2i.UP]
+
+	while not queue.is_empty():
+		var current: Vector2i = queue.pop_front()
+		for direction in directions:
+			var next_pos: Vector2i = current + direction
+			if not _is_in_bounds(next_pos.x, next_pos.y):
+				continue
+			var cell: Dictionary = grid[next_pos.y][next_pos.x]
+			if bool(cell["powered"]):
+				continue
+			if _is_cell_power_connectable(cell):
+				cell["powered"] = true
+				queue.append(next_pos)
+
+
+func _is_power_connectable(cell_type: String) -> bool:
+	return cell_type == CELL_START or cell_type == CELL_PATH or cell_type == CELL_END
+
+
+func _is_cell_power_connectable(cell: Dictionary) -> bool:
+	var cell_type: String = String(cell["type"])
+	if cell_type == CELL_FUEL:
+		return bool(cell["has_road"])
+	return _is_power_connectable(cell_type)
+
+
+func _harvest_connected_fuel() -> int:
+	var gained := 0
+	for y in range(grid_size):
+		for x in range(grid_size):
+			var cell: Dictionary = grid[y][x]
+			if String(cell["type"]) != CELL_FUEL or bool(cell["consumed"]):
+				continue
+			if bool(cell["powered"]):
+				cell["consumed"] = true
+				gained += int(cell["fuel_value"])
+	return gained
+
+
+func _is_in_bounds(x: int, y: int) -> bool:
+	return x >= 0 and x < grid_size and y >= 0 and y < grid_size
+
+
+func _refresh_all() -> void:
+	_refresh_hud()
+	_refresh_board()
+	_refresh_pieces()
+	_refresh_debug_panel()
+	_refresh_editor_panel()
+
+
+func _refresh_hud() -> void:
+	level_label.text = "Level %d (%s)" % [current_level, level_source]
+	fuel_label.text = "Fuel %d" % fuel
+	score_label.text = "Cash $%d" % score
+	status_label.text = "Mode Editor" if editor_mode else "Status %s" % status.capitalize()
+	message_label.text = message
+	if next_button:
+		next_button.disabled = editor_mode or status != "won"
+		next_button.text = "Next Level" if status == "won" else "Next Level Locked"
+	_refresh_debug_panel()
+	_refresh_editor_panel()
+
+
+func _toggle_debug_panel() -> void:
+	debug_visible = not debug_visible
+	if debug_panel:
+		debug_panel.visible = debug_visible
+	_refresh_board_visuals()
+	_refresh_debug_panel()
+
+
+func _toggle_editor_mode() -> void:
+	editor_mode = not editor_mode
+	selected_shape_index = -1
+	hover_origin = Vector2i(-1, -1)
+	if editor_mode:
+		status = "playing"
+		message = "Editor mode: brush %s. Click board cells to paint." % editor_brush
+	else:
+		_reset_play_state_after_edit()
+		message = "Play mode: testing edited board."
+	if editor_panel:
+		editor_panel.visible = editor_mode
+	_refresh_all()
+
+
+func _set_editor_brush(brush: String) -> void:
+	editor_brush = brush
+	message = "Editor brush: %s" % editor_brush
+	_refresh_hud()
+
+
+func _refresh_editor_panel() -> void:
+	if not editor_panel:
+		return
+	editor_panel.visible = editor_mode
+	if editor_json_text:
+		editor_json_text.text = _build_current_level_json_text()
+
+
+func _copy_editor_json_to_clipboard() -> void:
+	var json_text: String = _build_current_level_json_text()
+	DisplayServer.clipboard_set(json_text)
+	message = "Current level JSON copied to clipboard."
+	_refresh_hud()
+
+
+func _refresh_debug_panel() -> void:
+	if not debug_panel or not debug_label:
+		return
+	debug_panel.visible = debug_visible
+	if not debug_visible:
+		return
+
+	var stats := _collect_level_stats()
+	var selected_text: String = "none"
+	if selected_shape_index >= 0 and selected_shape_index < current_shapes.size():
+		selected_text = String(current_shapes[selected_shape_index].get("id", "piece"))
+
+	debug_label.text = "\n".join([
+		"Source: %s" % level_source,
+		"Entry: %s" % current_level_entry,
+		"Path: %s" % level_path,
+		"Grid: %dx%d" % [grid_size, grid_size],
+		"Start: (%d,%d)" % [start_pos.x, start_pos.y],
+		"Goal: (%d,%d)" % [goal_pos.x, goal_pos.y],
+		"Fuel: %d / initial %d" % [fuel, initial_fuel],
+		"Status: %s" % status,
+		"Selected: %s" % selected_text,
+		"Cash: %d / %d" % [int(stats["cash_collected"]), int(stats["cash_total"])],
+		"Blocks: %d" % int(stats["blocks"]),
+		"Powered: %d" % int(stats["powered"]),
+		"Route cells: %d" % generated_route_cells.size(),
+	])
+
+
+func _collect_level_stats() -> Dictionary:
+	var stats: Dictionary = {
+		"cash_total": 0,
+		"cash_collected": 0,
+		"blocks": 0,
+		"powered": 0,
+	}
+	for row in grid:
+		for cell in row:
+			var cell_type: String = String(cell["type"])
+			if cell_type == CELL_FUEL:
+				stats["cash_total"] += 1
+				if bool(cell["consumed"]):
+					stats["cash_collected"] += 1
+			elif cell_type == CELL_ROCK:
+				stats["blocks"] += 1
+			if bool(cell["powered"]):
+				stats["powered"] += 1
+	return stats
+
+
+func _paint_editor_cell(x: int, y: int) -> void:
+	if not _is_in_bounds(x, y):
+		return
+	if editor_brush == CELL_START:
+		if Vector2i(x, y) == goal_pos:
+			message = "Start cannot overlap goal."
+			_refresh_hud()
+			return
+		_clear_cell(start_pos.x, start_pos.y)
+		start_pos = Vector2i(x, y)
+		_clear_cell(x, y)
+		grid[y][x]["type"] = CELL_START
+	elif editor_brush == CELL_END:
+		if Vector2i(x, y) == start_pos:
+			message = "Goal cannot overlap start."
+			_refresh_hud()
+			return
+		_clear_cell(goal_pos.x, goal_pos.y)
+		goal_pos = Vector2i(x, y)
+		_clear_cell(x, y)
+		grid[y][x]["type"] = CELL_END
+	else:
+		if Vector2i(x, y) == start_pos or Vector2i(x, y) == goal_pos:
+			message = "Move start/goal before painting this cell."
+			_refresh_hud()
+			return
+		_clear_cell(x, y)
+		if editor_brush == CELL_FUEL:
+			_set_fuel(x, y, 2)
+		elif editor_brush == CELL_ROCK:
+			grid[y][x]["type"] = CELL_ROCK
+		else:
+			grid[y][x]["type"] = CELL_EMPTY
+
+	_reset_play_state_after_edit()
+	message = "Painted (%d,%d) with %s." % [x, y, editor_brush]
+	_refresh_all()
+
+
+func _clear_cell(x: int, y: int) -> void:
+	if not _is_in_bounds(x, y):
+		return
+	grid[y][x]["type"] = CELL_EMPTY
+	grid[y][x]["powered"] = false
+	grid[y][x]["consumed"] = false
+	grid[y][x]["has_road"] = false
+	grid[y][x]["fuel_value"] = 0
+
+
+func _reset_play_state_after_edit() -> void:
+	status = "playing"
+	fuel = initial_fuel
+	selected_shape_index = -1
+	hover_origin = Vector2i(-1, -1)
+	current_shapes = _get_random_shapes(3)
+	generated_route_cells = {}
+	for y in range(grid_size):
+		for x in range(grid_size):
+			var cell: Dictionary = grid[y][x]
+			if String(cell["type"]) == CELL_PATH:
+				_clear_cell(x, y)
+			elif String(cell["type"]) == CELL_FUEL:
+				cell["powered"] = false
+				cell["consumed"] = false
+				cell["has_road"] = false
+			else:
+				cell["powered"] = false
+	grid[start_pos.y][start_pos.x]["type"] = CELL_START
+	grid[goal_pos.y][goal_pos.x]["type"] = CELL_END
+	_update_powered_status()
+
+
+func _build_current_level_json_text() -> String:
+	var level_data: Dictionary = {
+		"id": "level_%03d" % current_level,
+		"name": "Edited Level %d" % current_level,
+		"width": grid_size,
+		"height": grid_size,
+		"initial_fuel": initial_fuel,
+		"start": {"x": start_pos.x, "y": start_pos.y},
+		"goal": {"x": goal_pos.x, "y": goal_pos.y},
+		"cash": [],
+		"blocks": [],
+	}
+
+	for y in range(grid_size):
+		for x in range(grid_size):
+			var cell: Dictionary = grid[y][x]
+			var cell_type: String = String(cell["type"])
+			if cell_type == CELL_FUEL:
+				level_data["cash"].append({
+					"x": x,
+					"y": y,
+					"value": int(cell["fuel_value"]),
+				})
+			elif cell_type == CELL_ROCK:
+				level_data["blocks"].append({
+					"x": x,
+					"y": y,
+				})
+	return JSON.stringify(level_data, "\t")
+
+
+func _refresh_board() -> void:
+	board_grid.columns = grid_size
+	for child in board_grid.get_children():
+		child.queue_free()
+
+	for y in range(grid_size):
+		for x in range(grid_size):
+			var button := Button.new()
+			var cell_size: int = _get_cell_pixel_size()
+			button.custom_minimum_size = Vector2(cell_size, cell_size)
+			button.expand_icon = true
+			button.clip_text = true
+			button.add_theme_color_override("font_color", Color.WHITE)
+			button.mouse_entered.connect(_on_cell_hovered.bind(x, y))
+			button.pressed.connect(_on_cell_pressed.bind(x, y))
+			board_grid.add_child(button)
+			_apply_cell_button_visual(button, x, y)
+
+
+func _refresh_board_visuals() -> void:
+	for y in range(grid_size):
+		for x in range(grid_size):
+			var index: int = y * grid_size + x
+			if index >= board_grid.get_child_count():
+				return
+			var button: Button = board_grid.get_child(index) as Button
+			if button:
+				_apply_cell_button_visual(button, x, y)
+
+
+func _get_cell_pixel_size() -> int:
+	if grid_size <= 6:
+		return 52
+	if grid_size <= 8:
+		return 44
+	return 36
+
+
+func _apply_cell_button_visual(button: Button, x: int, y: int) -> void:
+	var preview_state: String = _get_preview_state(x, y)
+	button.text = ""
+	button.icon = null if preview_state != "" else _cell_texture(grid[y][x])
+	button.tooltip_text = "(%d, %d) %s" % [x, y, _cell_tooltip(grid[y][x])]
+	button.add_theme_stylebox_override("normal", _cell_style(grid[y][x], false, preview_state))
+	button.add_theme_stylebox_override("hover", _cell_style(grid[y][x], true, preview_state))
+	button.add_theme_stylebox_override("pressed", _cell_style(grid[y][x], true, preview_state))
+
+
+func _cell_texture(cell: Dictionary) -> Texture2D:
+	var cell_type := String(cell["type"])
+	if cell_type == CELL_START:
+		return _get_tile_texture("taxi_start")
+	if cell_type == CELL_END:
+		return _get_tile_texture("goal")
+	if cell_type == CELL_PATH:
+		return _get_tile_texture("road_powered") if bool(cell["powered"]) else _get_tile_texture("road")
+	if cell_type == CELL_FUEL:
+		if bool(cell["has_road"]):
+			if bool(cell["consumed"]):
+				return _get_tile_texture("cash_collected")
+			return _get_tile_texture("cash_road")
+		return _get_tile_texture("cash")
+	if cell_type == CELL_ROCK:
+		return _get_tile_texture("block")
+	return _get_tile_texture("ground")
+
+
+func _get_tile_texture(texture_name: String) -> Texture2D:
+	return tile_textures[texture_name] as Texture2D
+
+
+func _cell_tooltip(cell: Dictionary) -> String:
+	var cell_type := String(cell["type"])
+	if cell_type == CELL_START:
+		return "Taxi start"
+	if cell_type == CELL_END:
+		return "Goal"
+	if cell_type == CELL_PATH:
+		return "Powered road" if bool(cell["powered"]) else "Road"
+	if cell_type == CELL_FUEL:
+		if bool(cell["has_road"]):
+			if bool(cell["consumed"]):
+				return "Collected cash road"
+			return "Cash road +%d" % int(cell["fuel_value"])
+		return "Cash +%d" % int(cell["fuel_value"])
+	if cell_type == CELL_ROCK:
+		return "Block"
+	return "Ground"
+
+
+func _cell_style(cell: Dictionary, hover: bool = false, preview_state: String = "") -> StyleBoxFlat:
+	var cell_type := String(cell["type"])
+	var background := Color("#4a3528")
+	var border := Color("#2a201a")
+
+	if cell_type == CELL_START:
+		background = Color("#d97706")
+		border = Color("#fde68a")
+	elif cell_type == CELL_END:
+		background = Color("#1d4ed8") if bool(cell["powered"]) else Color("#172554")
+		border = Color("#93c5fd")
+	elif cell_type == CELL_PATH:
+		background = Color("#242424") if bool(cell["powered"]) else Color("#3f3f46")
+		border = Color("#facc15") if bool(cell["powered"]) else Color("#71717a")
+	elif cell_type == CELL_FUEL:
+		if bool(cell["has_road"]):
+			background = Color("#242424") if bool(cell["powered"]) else Color("#3f3f46")
+			border = Color("#86efac") if not bool(cell["consumed"]) else Color("#facc15")
+		else:
+			background = Color("#166534") if not bool(cell["consumed"]) else Color("#14532d")
+			border = Color("#86efac") if not bool(cell["consumed"]) else Color("#4ade80")
+	elif cell_type == CELL_ROCK:
+		background = Color("#57534e")
+		border = Color("#292524")
+
+	if preview_state == "valid":
+		background = Color("#facc15")
+		border = Color("#fff7ad")
+	elif preview_state == "invalid":
+		background = Color("#ef4444")
+		border = Color("#fecaca")
+	elif editor_mode and int(cell["x"]) == hover_origin.x and int(cell["y"]) == hover_origin.y:
+		border = Color("#f97316")
+	elif debug_visible and bool(cell["powered"]):
+		border = Color("#38bdf8")
+	elif debug_visible and _is_route_cell(int(cell["x"]), int(cell["y"])):
+		border = Color("#a78bfa")
+
+	if hover:
+		background = background.lightened(0.12)
+
+	var style := StyleBoxFlat.new()
+	style.bg_color = background
+	style.border_color = border
+	var thick_border: bool = (debug_visible and (bool(cell["powered"]) or _is_route_cell(int(cell["x"]), int(cell["y"])))) or (editor_mode and int(cell["x"]) == hover_origin.x and int(cell["y"]) == hover_origin.y)
+	style.set_border_width_all(4 if thick_border else 2)
+	style.corner_radius_top_left = 4
+	style.corner_radius_top_right = 4
+	style.corner_radius_bottom_left = 4
+	style.corner_radius_bottom_right = 4
+	return style
+
+
+func _refresh_pieces() -> void:
+	for child in pieces_container.get_children():
+		child.queue_free()
+
+	for i in range(current_shapes.size()):
+		var button := Button.new()
+		button.custom_minimum_size = Vector2(190, 82)
+		button.text = _shape_preview_text(current_shapes[i])
+		button.tooltip_text = "Select this road piece."
+		if i == selected_shape_index:
+			button.add_theme_stylebox_override("normal", _piece_style(Color("#854d0e"), Color("#facc15")))
+		else:
+			button.add_theme_stylebox_override("normal", _piece_style(Color("#27272a"), Color("#71717a")))
+		button.add_theme_stylebox_override("hover", _piece_style(Color("#3f3f46"), Color("#facc15")))
+		button.pressed.connect(_select_shape.bind(i))
+		pieces_container.add_child(button)
+
+
+func _piece_style(background: Color, border: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = background
+	style.border_color = border
+	style.set_border_width_all(2)
+	style.corner_radius_top_left = 6
+	style.corner_radius_top_right = 6
+	style.corner_radius_bottom_left = 6
+	style.corner_radius_bottom_right = 6
+	return style
+
+
+func _shape_preview_text(shape: Dictionary) -> String:
+	var max_x := 0
+	var max_y := 0
+	for point in shape["cells"]:
+		max_x = max(max_x, int(point["x"]))
+		max_y = max(max_y, int(point["y"]))
+
+	var lines := []
+	for y in range(max_y + 1):
+		var line := ""
+		for x in range(max_x + 1):
+			line += "[]" if _shape_has_cell(shape, x, y) else "  "
+		lines.append(line)
+	return "\n".join(lines)
+
+
+func _shape_has_cell(shape: Dictionary, x: int, y: int) -> bool:
+	for point in shape["cells"]:
+		if int(point["x"]) == x and int(point["y"]) == y:
+			return true
+	return false
+
+
+func _select_shape(index: int) -> void:
+	if editor_mode:
+		return
+	if status != "playing":
+		return
+	selected_shape_index = index
+	hover_origin = Vector2i(-1, -1)
+	message = "Selected piece %d. Click the board to place it." % (index + 1)
+	_refresh_pieces()
+	_refresh_hud()
+
+
+func _on_cell_hovered(x: int, y: int) -> void:
+	if editor_mode:
+		hover_origin = Vector2i(x, y)
+		_refresh_board_visuals()
+		return
+	if status != "playing" or selected_shape_index < 0:
+		return
+	hover_origin = Vector2i(x, y)
+	_refresh_board_visuals()
+
+
+func _on_board_mouse_exited() -> void:
+	if hover_origin.x < 0:
+		return
+	hover_origin = Vector2i(-1, -1)
+	_refresh_board_visuals()
+
+
+func _get_preview_state(x: int, y: int) -> String:
+	if editor_mode:
+		return ""
+	if status != "playing" or selected_shape_index < 0 or hover_origin.x < 0:
+		return ""
+	var shape: Dictionary = current_shapes[selected_shape_index]
+	var is_preview_cell := false
+	for offset in shape["cells"]:
+		if x == hover_origin.x + int(offset["x"]) and y == hover_origin.y + int(offset["y"]):
+			is_preview_cell = true
+			break
+	if not is_preview_cell:
+		return ""
+	return "valid" if _is_placement_valid(shape, hover_origin) else "invalid"
+
+
+func _on_next_level_pressed() -> void:
+	if status != "won":
+		return
+	current_level += 1
+	init_level()
