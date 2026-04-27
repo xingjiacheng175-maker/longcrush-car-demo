@@ -1,0 +1,17 @@
+{
+	"blocks": [],
+	"cash": [],
+	"goal": {
+		"x": 7,
+		"y": 7
+	},
+	"height": 8,
+	"id": "level_003",
+	"initial_fuel": 3,
+	"name": "Edited Level 3",
+	"start": {
+		"x": 0,
+		"y": 0
+	},
+	"width": 8
+}

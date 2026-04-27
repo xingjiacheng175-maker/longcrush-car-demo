@@ -11,6 +11,14 @@ const INITIAL_FUEL := 3
 const FUEL_TO_SCORE_RATIO := 10
 const LEVEL_LIST_PATH := "res://levels/levels.json"
 const LEVEL_PATH_TEMPLATE := "res://levels/level_%03d.json"
+const EDITOR_MIN_GRID_WIDTH := 4
+const EDITOR_MAX_GRID_WIDTH := 14
+const EDITOR_MIN_GRID_HEIGHT := 4
+const EDITOR_MAX_GRID_HEIGHT := 12
+const EDITOR_MIN_INITIAL_FUEL := 1
+const EDITOR_MAX_INITIAL_FUEL := 20
+const EDITOR_MIN_CASH_VALUE := 1
+const EDITOR_MAX_CASH_VALUE := 9
 
 const LEVEL_CONFIGS := [
 	{"level": 1, "size": 6, "fuel_count": 4, "rocks": 2},
@@ -34,7 +42,8 @@ const SHAPE_LIBRARY := [
 
 var rng := RandomNumberGenerator.new()
 var grid: Array = []
-var grid_size := 6
+var grid_width := 6
+var grid_height := 6
 var current_level := 1
 var fuel := INITIAL_FUEL
 var initial_fuel := INITIAL_FUEL
@@ -55,6 +64,8 @@ var current_level_entry: String = ""
 var debug_visible: bool = false
 var editor_mode: bool = false
 var editor_brush: String = CELL_ROCK
+var editor_cash_value: int = 2
+var editor_refreshing_level_selector: bool = false
 
 var board_grid: GridContainer
 var pieces_container: VBoxContainer
@@ -67,6 +78,13 @@ var next_button: Button
 var debug_panel: PanelContainer
 var debug_label: Label
 var editor_panel: PanelContainer
+var editor_level_selector: OptionButton
+var editor_level_path_label: Label
+var editor_grid_width_spin: SpinBox
+var editor_grid_height_spin: SpinBox
+var editor_initial_fuel_spin: SpinBox
+var editor_cash_value_spin: SpinBox
+var editor_validation_label: Label
 var editor_json_text: TextEdit
 
 
@@ -252,9 +270,66 @@ func _build_ui() -> void:
 	editor_box.add_child(editor_title)
 
 	var editor_help := Label.new()
-	editor_help.text = "Paint current board, then copy JSON into a level file."
+	editor_help.text = "Paint the current board, then save it to a level file."
 	editor_help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	editor_box.add_child(editor_help)
+
+	var editor_files_title := Label.new()
+	editor_files_title.text = "Level Files"
+	editor_files_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	editor_box.add_child(editor_files_title)
+
+	editor_level_selector = OptionButton.new()
+	editor_level_selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	editor_level_selector.item_selected.connect(_on_editor_level_selected)
+	editor_box.add_child(editor_level_selector)
+
+	editor_level_path_label = Label.new()
+	editor_level_path_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	editor_level_path_label.custom_minimum_size = Vector2(220, 0)
+	editor_box.add_child(editor_level_path_label)
+
+	var level_file_buttons := HBoxContainer.new()
+	level_file_buttons.add_theme_constant_override("separation", 4)
+	editor_box.add_child(level_file_buttons)
+
+	var new_level_button := Button.new()
+	new_level_button.text = "New Level"
+	new_level_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	new_level_button.pressed.connect(_create_new_editor_level)
+	level_file_buttons.add_child(new_level_button)
+
+	var save_level_button := Button.new()
+	save_level_button.text = "Save Level"
+	save_level_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	save_level_button.pressed.connect(_save_editor_level)
+	level_file_buttons.add_child(save_level_button)
+
+	var editor_settings_title := Label.new()
+	editor_settings_title.text = "Settings"
+	editor_settings_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	editor_box.add_child(editor_settings_title)
+
+	editor_grid_width_spin = _make_editor_spinbox(EDITOR_MIN_GRID_WIDTH, EDITOR_MAX_GRID_WIDTH, 1, grid_width)
+	editor_grid_width_spin.value_changed.connect(_on_editor_grid_width_changed)
+	editor_box.add_child(_make_editor_spinbox_row("Width", editor_grid_width_spin))
+
+	editor_grid_height_spin = _make_editor_spinbox(EDITOR_MIN_GRID_HEIGHT, EDITOR_MAX_GRID_HEIGHT, 1, grid_height)
+	editor_grid_height_spin.value_changed.connect(_on_editor_grid_height_changed)
+	editor_box.add_child(_make_editor_spinbox_row("Height", editor_grid_height_spin))
+
+	editor_initial_fuel_spin = _make_editor_spinbox(EDITOR_MIN_INITIAL_FUEL, EDITOR_MAX_INITIAL_FUEL, 1, initial_fuel)
+	editor_initial_fuel_spin.value_changed.connect(_on_editor_initial_fuel_changed)
+	editor_box.add_child(_make_editor_spinbox_row("Initial fuel", editor_initial_fuel_spin))
+
+	editor_cash_value_spin = _make_editor_spinbox(EDITOR_MIN_CASH_VALUE, EDITOR_MAX_CASH_VALUE, 1, editor_cash_value)
+	editor_cash_value_spin.value_changed.connect(_on_editor_cash_value_changed)
+	editor_box.add_child(_make_editor_spinbox_row("Cash value", editor_cash_value_spin))
+
+	var brushes_title := Label.new()
+	brushes_title.text = "Brushes"
+	brushes_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	editor_box.add_child(brushes_title)
 
 	var brush_row_1 := HBoxContainer.new()
 	brush_row_1.add_theme_constant_override("separation", 4)
@@ -274,6 +349,16 @@ func _build_ui() -> void:
 	copy_json_button.pressed.connect(_copy_editor_json_to_clipboard)
 	editor_box.add_child(copy_json_button)
 
+	var copy_entry_button := Button.new()
+	copy_entry_button.text = "Copy levels.json Entry"
+	copy_entry_button.pressed.connect(_copy_editor_level_entry_to_clipboard)
+	editor_box.add_child(copy_entry_button)
+
+	editor_validation_label = Label.new()
+	editor_validation_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	editor_validation_label.custom_minimum_size = Vector2(220, 0)
+	editor_box.add_child(editor_validation_label)
+
 	editor_json_text = TextEdit.new()
 	editor_json_text.custom_minimum_size = Vector2(220, 220)
 	editor_json_text.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
@@ -287,6 +372,29 @@ func _make_hud_label() -> Label:
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", 18)
 	return label
+
+
+func _make_editor_spinbox(min_value: float, max_value: float, step_value: float, current_value: float) -> SpinBox:
+	var spinbox := SpinBox.new()
+	spinbox.min_value = min_value
+	spinbox.max_value = max_value
+	spinbox.step = step_value
+	spinbox.value = current_value
+	spinbox.allow_greater = false
+	spinbox.allow_lesser = false
+	spinbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	return spinbox
+
+
+func _make_editor_spinbox_row(label_text: String, spinbox: SpinBox) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	var label := Label.new()
+	label.text = label_text
+	label.custom_minimum_size = Vector2(98, 0)
+	row.add_child(label)
+	row.add_child(spinbox)
+	return row
 
 
 func _make_editor_brush_button(label_text: String, brush: String) -> Button:
@@ -364,13 +472,14 @@ func _load_level_from_path(path: String) -> bool:
 		return false
 
 	level_source = "json"
-	grid_size = int(level_data["width"])
+	grid_width = int(level_data["width"])
+	grid_height = int(level_data["height"])
 	initial_fuel = int(level_data.get("initial_fuel", INITIAL_FUEL))
 	fuel = initial_fuel
 	start_pos = _point_from_dict(level_data["start"])
 	goal_pos = _point_from_dict(level_data["goal"])
 	generated_route_cells = {}
-	grid = _create_empty_grid(grid_size)
+	grid = _create_empty_grid(grid_width, grid_height)
 	grid[start_pos.y][start_pos.x]["type"] = CELL_START
 	grid[goal_pos.y][goal_pos.x]["type"] = CELL_END
 
@@ -392,8 +501,8 @@ func _load_level_from_path(path: String) -> bool:
 
 	message = "Loaded %s from JSON: %dx%d, fuel %d." % [
 		String(level_data.get("name", path)),
-		grid_size,
-		grid_size,
+		grid_width,
+		grid_height,
 		initial_fuel,
 	]
 	return true
@@ -411,13 +520,10 @@ func _validate_level_data(level_data: Dictionary, path: String) -> bool:
 	if width <= 1 or height <= 1:
 		push_warning("Level JSON has invalid size: %s" % path)
 		return false
-	if width != height:
-		push_warning("Only square levels are supported for now: %s" % path)
-		return false
 
 	var json_start := _point_from_dict(level_data["start"])
 	var json_goal := _point_from_dict(level_data["goal"])
-	if not _is_point_in_size(json_start, width) or not _is_point_in_size(json_goal, width):
+	if not _is_point_in_bounds(json_start, width, height) or not _is_point_in_bounds(json_goal, width, height):
 		push_warning("Level JSON start or goal is out of bounds: %s" % path)
 		return false
 	if json_start == json_goal:
@@ -430,8 +536,8 @@ func _point_from_dict(data: Dictionary) -> Vector2i:
 	return Vector2i(int(data.get("x", 0)), int(data.get("y", 0)))
 
 
-func _is_point_in_size(point: Vector2i, size: int) -> bool:
-	return point.x >= 0 and point.x < size and point.y >= 0 and point.y < size
+func _is_point_in_bounds(point: Vector2i, width: int, height: int) -> bool:
+	return point.x >= 0 and point.x < width and point.y >= 0 and point.y < height
 
 
 func _init_generated_level() -> void:
@@ -440,12 +546,13 @@ func _init_generated_level() -> void:
 	if current_level_entry == "":
 		current_level_entry = "generated"
 	level_path = current_level_entry
-	grid_size = int(config["size"])
+	grid_width = int(config["size"])
+	grid_height = int(config["size"])
 	initial_fuel = INITIAL_FUEL
 	fuel = initial_fuel
 	start_pos = Vector2i(0, 0)
-	goal_pos = Vector2i(grid_size - 1, grid_size - 1)
-	grid = _create_empty_grid(grid_size)
+	goal_pos = Vector2i(grid_width - 1, grid_height - 1)
+	grid = _create_empty_grid(grid_width, grid_height)
 	generated_route_cells = _generate_solution_route()
 	grid[start_pos.y][start_pos.x]["type"] = CELL_START
 	grid[goal_pos.y][goal_pos.x]["type"] = CELL_END
@@ -453,18 +560,18 @@ func _init_generated_level() -> void:
 	_place_fuels(int(config["fuel_count"]))
 	message = "Level %d generated: %dx%d, %d cash stops, %d blocks." % [
 		current_level,
-		grid_size,
-		grid_size,
+		grid_width,
+		grid_height,
 		int(config["fuel_count"]),
 		int(config["rocks"]),
 	]
 
 
-func _create_empty_grid(size: int) -> Array:
+func _create_empty_grid(width: int, height: int) -> Array:
 	var rows := []
-	for y in range(size):
+	for y in range(height):
 		var row := []
-		for x in range(size):
+		for x in range(width):
 			row.append({
 				"x": x,
 				"y": y,
@@ -483,8 +590,8 @@ func _place_rocks(count: int) -> void:
 	var attempts := 0
 	while placed < count and attempts < count * 40 + 100:
 		attempts += 1
-		var x := rng.randi_range(0, grid_size - 1)
-		var y := rng.randi_range(0, grid_size - 1)
+		var x := rng.randi_range(0, grid_width - 1)
+		var y := rng.randi_range(0, grid_height - 1)
 		if grid[y][x]["type"] != CELL_EMPTY or _is_protected_generation_cell(x, y) or _is_route_cell(x, y):
 			continue
 		grid[y][x]["type"] = CELL_ROCK
@@ -504,8 +611,8 @@ func _place_fuels(count: int) -> void:
 	var attempts := 0
 	while placed < count and attempts < count * 30 + 50:
 		attempts += 1
-		var x := rng.randi_range(0, grid_size - 1)
-		var y := rng.randi_range(0, grid_size - 1)
+		var x := rng.randi_range(0, grid_width - 1)
+		var y := rng.randi_range(0, grid_height - 1)
 		if grid[y][x]["type"] == CELL_EMPTY and not _is_protected_generation_cell(x, y):
 			_set_fuel(x, y, rng.randi_range(1, 2))
 			placed += 1
@@ -560,7 +667,7 @@ func _get_route_fuel_points(count: int) -> Array[Vector2i]:
 	var next_distance: int = 2
 	for point in route_points:
 		var distance: int = point.x + point.y
-		if distance <= 1 or distance >= (grid_size - 1) * 2:
+		if distance <= 1 or distance >= (grid_width - 1) + (grid_height - 1):
 			continue
 		if distance >= next_distance:
 			points.append(point)
@@ -764,8 +871,8 @@ func _is_cell_power_connectable(cell: Dictionary) -> bool:
 
 func _harvest_connected_fuel() -> int:
 	var gained := 0
-	for y in range(grid_size):
-		for x in range(grid_size):
+	for y in range(grid_height):
+		for x in range(grid_width):
 			var cell: Dictionary = grid[y][x]
 			if String(cell["type"]) != CELL_FUEL or bool(cell["consumed"]):
 				continue
@@ -776,7 +883,7 @@ func _harvest_connected_fuel() -> int:
 
 
 func _is_in_bounds(x: int, y: int) -> bool:
-	return x >= 0 and x < grid_size and y >= 0 and y < grid_size
+	return x >= 0 and x < grid_width and y >= 0 and y < grid_height
 
 
 func _refresh_all() -> void:
@@ -829,19 +936,342 @@ func _set_editor_brush(brush: String) -> void:
 	_refresh_hud()
 
 
+func _on_editor_grid_width_changed(value: float) -> void:
+	if not editor_mode:
+		return
+	var new_width: int = clampi(int(value), EDITOR_MIN_GRID_WIDTH, EDITOR_MAX_GRID_WIDTH)
+	if new_width == grid_width:
+		return
+	_resize_editor_grid(new_width, grid_height)
+
+
+func _on_editor_grid_height_changed(value: float) -> void:
+	if not editor_mode:
+		return
+	var new_height: int = clampi(int(value), EDITOR_MIN_GRID_HEIGHT, EDITOR_MAX_GRID_HEIGHT)
+	if new_height == grid_height:
+		return
+	_resize_editor_grid(grid_width, new_height)
+
+
+func _on_editor_initial_fuel_changed(value: float) -> void:
+	if not editor_mode:
+		return
+	initial_fuel = clampi(int(value), EDITOR_MIN_INITIAL_FUEL, EDITOR_MAX_INITIAL_FUEL)
+	_reset_play_state_after_edit()
+	message = "Initial fuel set to %d." % initial_fuel
+	_refresh_all()
+
+
+func _on_editor_cash_value_changed(value: float) -> void:
+	if not editor_mode:
+		return
+	editor_cash_value = clampi(int(value), EDITOR_MIN_CASH_VALUE, EDITOR_MAX_CASH_VALUE)
+	message = "Cash brush value set to %d." % editor_cash_value
+	_refresh_hud()
+
+
+func _resize_editor_grid(new_width: int, new_height: int) -> void:
+	var old_grid: Array = grid
+	var old_width: int = grid_width
+	var old_height: int = grid_height
+	var old_start: Vector2i = start_pos
+	var old_goal: Vector2i = goal_pos
+
+	grid_width = new_width
+	grid_height = new_height
+	grid = _create_empty_grid(grid_width, grid_height)
+	for y in range(min(old_height, grid_height)):
+		for x in range(min(old_width, grid_width)):
+			var old_cell: Dictionary = old_grid[y][x]
+			var old_type: String = String(old_cell["type"])
+			if old_type == CELL_FUEL:
+				_set_fuel(x, y, int(old_cell.get("fuel_value", editor_cash_value)))
+			elif old_type == CELL_ROCK:
+				grid[y][x]["type"] = CELL_ROCK
+
+	start_pos = _clamp_point_to_grid(old_start)
+	goal_pos = _clamp_point_to_grid(old_goal)
+	if start_pos == goal_pos:
+		start_pos = Vector2i(0, 0)
+		goal_pos = Vector2i(grid_width - 1, grid_height - 1)
+	_clear_cell(start_pos.x, start_pos.y)
+	_clear_cell(goal_pos.x, goal_pos.y)
+	grid[start_pos.y][start_pos.x]["type"] = CELL_START
+	grid[goal_pos.y][goal_pos.x]["type"] = CELL_END
+
+	_reset_play_state_after_edit()
+	message = "Board resized to %dx%d." % [grid_width, grid_height]
+	_refresh_all()
+
+
+func _clamp_point_to_grid(point: Vector2i) -> Vector2i:
+	return Vector2i(clampi(point.x, 0, grid_width - 1), clampi(point.y, 0, grid_height - 1))
+
+
 func _refresh_editor_panel() -> void:
 	if not editor_panel:
 		return
 	editor_panel.visible = editor_mode
+	_refresh_editor_level_selector()
+	if editor_grid_width_spin:
+		editor_grid_width_spin.set_value_no_signal(grid_width)
+	if editor_grid_height_spin:
+		editor_grid_height_spin.set_value_no_signal(grid_height)
+	if editor_initial_fuel_spin:
+		editor_initial_fuel_spin.set_value_no_signal(initial_fuel)
+	if editor_cash_value_spin:
+		editor_cash_value_spin.set_value_no_signal(editor_cash_value)
+	if editor_validation_label:
+		var validation := _validate_current_editor_level()
+		if bool(validation["ok"]):
+			editor_validation_label.text = "Validation: OK"
+		else:
+			editor_validation_label.text = "Validation:\n%s" % "\n".join(validation["errors"])
 	if editor_json_text:
 		editor_json_text.text = _build_current_level_json_text()
 
 
+func _refresh_editor_level_selector() -> void:
+	if not editor_level_selector:
+		return
+
+	editor_refreshing_level_selector = true
+	editor_level_selector.clear()
+	var entries := level_sequence.duplicate()
+	if entries.is_empty():
+		entries.append(_get_level_entry(current_level))
+
+	for i in range(entries.size()):
+		var entry: String = String(entries[i])
+		editor_level_selector.add_item(_format_level_selector_text(i, entry))
+
+	var selected_index: int = clampi(current_level - 1, 0, max(entries.size() - 1, 0))
+	if entries.size() > 0:
+		editor_level_selector.select(selected_index)
+	editor_refreshing_level_selector = false
+
+	if editor_level_path_label:
+		editor_level_path_label.text = "Current: %s" % _current_editor_level_path_text()
+
+
+func _format_level_selector_text(index: int, entry: String) -> String:
+	var prefix: String = "%02d" % (index + 1)
+	if entry == "" or entry == "generated":
+		return "%s: generated" % prefix
+	return "%s: %s" % [prefix, entry.get_file()]
+
+
+func _current_editor_level_path_text() -> String:
+	if current_level_entry != "":
+		return current_level_entry
+	if level_path != "":
+		return level_path
+	return _suggest_editor_level_entry()
+
+
+func _on_editor_level_selected(index: int) -> void:
+	if editor_refreshing_level_selector:
+		return
+	if index < 0:
+		return
+	current_level = index + 1
+	init_level()
+	if editor_mode:
+		message = "Editing level %d." % current_level
+		_refresh_all()
+
+
 func _copy_editor_json_to_clipboard() -> void:
+	var validation := _validate_current_editor_level()
+	if not bool(validation["ok"]):
+		message = "Fix validation errors before copying JSON."
+		_refresh_hud()
+		return
 	var json_text: String = _build_current_level_json_text()
 	DisplayServer.clipboard_set(json_text)
 	message = "Current level JSON copied to clipboard."
 	_refresh_hud()
+
+
+func _copy_editor_level_entry_to_clipboard() -> void:
+	var entry: String = _suggest_editor_level_entry()
+	DisplayServer.clipboard_set("\"%s\"" % entry)
+	message = "levels.json entry copied: %s" % entry
+	_refresh_hud()
+
+
+func _suggest_editor_level_entry() -> String:
+	if level_source == "json" and level_path.begins_with("res://levels/"):
+		return level_path
+	return LEVEL_PATH_TEMPLATE % current_level
+
+
+func _save_editor_level() -> void:
+	var validation := _validate_current_editor_level()
+	if not bool(validation["ok"]):
+		message = "Fix validation errors before saving level."
+		_refresh_hud()
+		return
+
+	var save_path: String = _current_editor_save_path()
+	if save_path == "":
+		message = "No valid level file path is available for saving."
+		_refresh_hud()
+		return
+
+	if not _write_text_file(save_path, _build_current_level_json_text()):
+		message = "Could not save level file: %s" % save_path
+		_refresh_hud()
+		return
+
+	_assign_current_level_entry(save_path)
+	if not _write_level_sequence_file():
+		message = "Saved level, but could not update levels.json."
+		_refresh_hud()
+		return
+	level_source = "json"
+	level_path = save_path
+	current_level_entry = save_path
+	message = "Saved level %d to %s." % [current_level, save_path]
+	_refresh_all()
+
+
+func _current_editor_save_path() -> String:
+	if current_level_entry.begins_with("res://levels/") and current_level_entry.ends_with(".json"):
+		return current_level_entry
+	if level_path.begins_with("res://levels/") and level_path.ends_with(".json"):
+		return level_path
+	return LEVEL_PATH_TEMPLATE % current_level
+
+
+func _assign_current_level_entry(path: String) -> void:
+	var index: int = current_level - 1
+	while level_sequence.size() <= index:
+		level_sequence.append("generated")
+	level_sequence[index] = path
+
+
+func _create_new_editor_level() -> void:
+	var new_path: String = _next_new_level_path()
+	var entry_index: int = _find_level_entry_index(new_path)
+	if entry_index < 0:
+		entry_index = _insert_level_entry_before_generated(new_path)
+
+	current_level = entry_index + 1
+	current_level_entry = new_path
+	level_path = new_path
+	level_source = "json"
+	_reset_to_blank_editor_level()
+
+	if not _write_text_file(new_path, _build_current_level_json_text()):
+		message = "Could not create level file: %s" % new_path
+		_refresh_all()
+		return
+
+	if not _write_level_sequence_file():
+		message = "Created level file, but could not update levels.json."
+		_refresh_all()
+		return
+	message = "Created new level: %s." % new_path
+	_refresh_all()
+
+
+func _reset_to_blank_editor_level() -> void:
+	grid_width = clampi(grid_width, EDITOR_MIN_GRID_WIDTH, EDITOR_MAX_GRID_WIDTH)
+	grid_height = clampi(grid_height, EDITOR_MIN_GRID_HEIGHT, EDITOR_MAX_GRID_HEIGHT)
+	initial_fuel = clampi(initial_fuel, EDITOR_MIN_INITIAL_FUEL, EDITOR_MAX_INITIAL_FUEL)
+	fuel = initial_fuel
+	status = "playing"
+	selected_shape_index = -1
+	hover_origin = Vector2i(-1, -1)
+	current_shapes = _get_random_shapes(3)
+	generated_route_cells = {}
+	start_pos = Vector2i(0, 0)
+	goal_pos = Vector2i(grid_width - 1, grid_height - 1)
+	grid = _create_empty_grid(grid_width, grid_height)
+	grid[start_pos.y][start_pos.x]["type"] = CELL_START
+	grid[goal_pos.y][goal_pos.x]["type"] = CELL_END
+	_update_powered_status()
+
+
+func _next_new_level_path() -> String:
+	for i in range(1, 1000):
+		var path: String = LEVEL_PATH_TEMPLATE % i
+		if not FileAccess.file_exists(path):
+			return path
+	return LEVEL_PATH_TEMPLATE % (level_sequence.size() + 1)
+
+
+func _find_level_entry_index(entry: String) -> int:
+	for i in range(level_sequence.size()):
+		if String(level_sequence[i]) == entry:
+			return i
+	return -1
+
+
+func _insert_level_entry_before_generated(entry: String) -> int:
+	for i in range(level_sequence.size()):
+		if String(level_sequence[i]) == "generated":
+			level_sequence.insert(i, entry)
+			return i
+	level_sequence.append(entry)
+	return level_sequence.size() - 1
+
+
+func _write_level_sequence_file() -> bool:
+	var data: Dictionary = {"levels": level_sequence}
+	return _write_text_file(LEVEL_LIST_PATH, JSON.stringify(data, "\t"))
+
+
+func _write_text_file(path: String, text: String) -> bool:
+	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
+	if file == null:
+		push_warning("Could not write file: %s" % path)
+		return false
+	file.store_string(text)
+	return true
+
+
+func _validate_current_editor_level() -> Dictionary:
+	var errors: Array[String] = []
+	if grid_width < EDITOR_MIN_GRID_WIDTH or grid_width > EDITOR_MAX_GRID_WIDTH:
+		errors.append("Width must be between %d and %d." % [EDITOR_MIN_GRID_WIDTH, EDITOR_MAX_GRID_WIDTH])
+	if grid_height < EDITOR_MIN_GRID_HEIGHT or grid_height > EDITOR_MAX_GRID_HEIGHT:
+		errors.append("Height must be between %d and %d." % [EDITOR_MIN_GRID_HEIGHT, EDITOR_MAX_GRID_HEIGHT])
+	if not _is_in_bounds(start_pos.x, start_pos.y):
+		errors.append("Start is out of bounds.")
+	if not _is_in_bounds(goal_pos.x, goal_pos.y):
+		errors.append("Goal is out of bounds.")
+	if start_pos == goal_pos:
+		errors.append("Start and goal cannot overlap.")
+
+	var start_count := 0
+	var goal_count := 0
+	for y in range(grid_height):
+		for x in range(grid_width):
+			var point := Vector2i(x, y)
+			var cell_type: String = String(grid[y][x]["type"])
+			if cell_type == CELL_START:
+				start_count += 1
+			elif cell_type == CELL_END:
+				goal_count += 1
+			if (cell_type == CELL_FUEL or cell_type == CELL_ROCK) and (point == start_pos or point == goal_pos):
+				errors.append("Start/goal cannot overlap cash or blocks.")
+
+	if start_count != 1:
+		errors.append("Level must contain exactly one start.")
+	if goal_count != 1:
+		errors.append("Level must contain exactly one goal.")
+	if _is_in_bounds(start_pos.x, start_pos.y) and String(grid[start_pos.y][start_pos.x]["type"]) != CELL_START:
+		errors.append("Start marker does not match the start cell.")
+	if _is_in_bounds(goal_pos.x, goal_pos.y) and String(grid[goal_pos.y][goal_pos.x]["type"]) != CELL_END:
+		errors.append("Goal marker does not match the goal cell.")
+
+	return {
+		"ok": errors.is_empty(),
+		"errors": errors,
+	}
 
 
 func _refresh_debug_panel() -> void:
@@ -860,7 +1290,7 @@ func _refresh_debug_panel() -> void:
 		"Source: %s" % level_source,
 		"Entry: %s" % current_level_entry,
 		"Path: %s" % level_path,
-		"Grid: %dx%d" % [grid_size, grid_size],
+		"Grid: %dx%d" % [grid_width, grid_height],
 		"Start: (%d,%d)" % [start_pos.x, start_pos.y],
 		"Goal: (%d,%d)" % [goal_pos.x, goal_pos.y],
 		"Fuel: %d / initial %d" % [fuel, initial_fuel],
@@ -922,7 +1352,7 @@ func _paint_editor_cell(x: int, y: int) -> void:
 			return
 		_clear_cell(x, y)
 		if editor_brush == CELL_FUEL:
-			_set_fuel(x, y, 2)
+			_set_fuel(x, y, editor_cash_value)
 		elif editor_brush == CELL_ROCK:
 			grid[y][x]["type"] = CELL_ROCK
 		else:
@@ -950,8 +1380,8 @@ func _reset_play_state_after_edit() -> void:
 	hover_origin = Vector2i(-1, -1)
 	current_shapes = _get_random_shapes(3)
 	generated_route_cells = {}
-	for y in range(grid_size):
-		for x in range(grid_size):
+	for y in range(grid_height):
+		for x in range(grid_width):
 			var cell: Dictionary = grid[y][x]
 			if String(cell["type"]) == CELL_PATH:
 				_clear_cell(x, y)
@@ -970,8 +1400,8 @@ func _build_current_level_json_text() -> String:
 	var level_data: Dictionary = {
 		"id": "level_%03d" % current_level,
 		"name": "Edited Level %d" % current_level,
-		"width": grid_size,
-		"height": grid_size,
+		"width": grid_width,
+		"height": grid_height,
 		"initial_fuel": initial_fuel,
 		"start": {"x": start_pos.x, "y": start_pos.y},
 		"goal": {"x": goal_pos.x, "y": goal_pos.y},
@@ -979,8 +1409,8 @@ func _build_current_level_json_text() -> String:
 		"blocks": [],
 	}
 
-	for y in range(grid_size):
-		for x in range(grid_size):
+	for y in range(grid_height):
+		for x in range(grid_width):
 			var cell: Dictionary = grid[y][x]
 			var cell_type: String = String(cell["type"])
 			if cell_type == CELL_FUEL:
@@ -998,12 +1428,12 @@ func _build_current_level_json_text() -> String:
 
 
 func _refresh_board() -> void:
-	board_grid.columns = grid_size
+	board_grid.columns = grid_width
 	for child in board_grid.get_children():
 		child.queue_free()
 
-	for y in range(grid_size):
-		for x in range(grid_size):
+	for y in range(grid_height):
+		for x in range(grid_width):
 			var button := Button.new()
 			var cell_size: int = _get_cell_pixel_size()
 			button.custom_minimum_size = Vector2(cell_size, cell_size)
@@ -1017,9 +1447,9 @@ func _refresh_board() -> void:
 
 
 func _refresh_board_visuals() -> void:
-	for y in range(grid_size):
-		for x in range(grid_size):
-			var index: int = y * grid_size + x
+	for y in range(grid_height):
+		for x in range(grid_width):
+			var index: int = y * grid_width + x
 			if index >= board_grid.get_child_count():
 				return
 			var button: Button = board_grid.get_child(index) as Button
@@ -1028,9 +1458,10 @@ func _refresh_board_visuals() -> void:
 
 
 func _get_cell_pixel_size() -> int:
-	if grid_size <= 6:
+	var longest_side: int = max(grid_width, grid_height)
+	if longest_side <= 6:
 		return 52
-	if grid_size <= 8:
+	if longest_side <= 8:
 		return 44
 	return 36
 

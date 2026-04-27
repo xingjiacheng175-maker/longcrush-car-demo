@@ -1,6 +1,6 @@
 # Handoff
 
-Last updated: 2026-04-25
+Last updated: 2026-04-27
 
 ## Purpose
 
@@ -28,6 +28,10 @@ The user works across a home Windows machine and a company Mac. Keep this file a
 - Left click board: place selected road piece if valid.
 - `D`: toggle debug panel.
 - `E`: toggle editor mode.
+- In editor mode, adjust board width, board height, initial fuel, and current cash value from the editor panel.
+- In editor mode, use the level selector to load configured level entries.
+- In editor mode, use `New Level` to create the next missing JSON level file.
+- In editor mode, use `Save Level` to write the current edit back to the current JSON level file.
 - `Restart Level`: restart current level.
 - `Reload Level`: reload current level data.
 - `Next Level`: available after victory.
@@ -42,9 +46,11 @@ Current entries:
 
 1. `res://levels/level_001.json`
 2. `res://levels/level_002.json`
-3. `generated`
+3. `res://levels/level_003.json`
+4. `generated`
+5. `generated`
 
-There are currently 2 hand-authored JSON levels plus 1 generated level entry.
+There are currently 2 hand-authored JSON level files unless `level_003.json` has already been created with the editor. Missing JSON entries fall back to generated content until saved.
 
 ## How To Configure 5 Levels Later
 
@@ -107,30 +113,47 @@ Example:
 }
 ```
 
+## Current Editor Notes
+
+- Level selector is populated from `levels/levels.json`.
+- `New Level` creates the next missing `res://levels/level_%03d.json` and updates `levels/levels.json`.
+- `Save Level` writes the current board JSON to the current level path and updates `levels/levels.json`.
+- Board width can be changed from 4 to 14.
+- Board height can be changed from 4 to 12.
+- Initial fuel can be changed from 1 to 20.
+- Current cash brush value can be changed from 1 to 9.
+- Resizing preserves in-bounds cash and blocks, clamps start/goal inside the board, and resets temporary play state.
+- JSON level loading and export support independent `width` and `height` values.
+- Validation is shown in the editor panel before export.
+- `Copy JSON` copies the current board JSON if validation passes.
+- `Copy levels.json Entry` copies the suggested quoted level path for `levels/levels.json`.
+- Saves are intended for development inside the Godot editor. Exported builds should not rely on writing to `res://levels/`.
+- The editor does not yet support deleting or reordering level entries.
+
 ## Recommended Next Phase
 
-Recommended next phase: **Level Editor V2**.
+Recommended next phase: **level authoring and editor workflow hardening**.
 
 Before coding, tell the user:
 
 - Plan:
-  - add board size control,
-  - add initial fuel control,
-  - add cash value control,
-  - add validation,
-  - improve export workflow,
-  - document how to configure 5 levels.
+  - use the editor to author more JSON levels,
+  - add `Save As` if needed,
+  - add delete/reorder controls if needed,
+  - consider a lightweight solvability check,
+  - document the authoring workflow.
 - File modification scope:
   - likely `scripts/Main.gd`,
   - possibly `docs/project_status.md`,
   - possibly `docs/handoff.md`,
-  - optional new doc such as `docs/level_authoring.md`.
+  - possibly `levels/levels.json`,
+  - optionally new JSON files under `levels/`.
 - Testing method:
   - run F6 in Godot,
   - enter editor with `E`,
-  - create/export JSON,
-  - paste or save it as a level file,
-  - update `levels/levels.json`,
+  - switch between levels,
+  - create a new level,
+  - save and reload it,
   - verify progression through levels.
 
 Wait for user confirmation before modifying files.

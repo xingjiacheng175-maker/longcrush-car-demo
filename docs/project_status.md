@@ -1,12 +1,12 @@
 # Project Status
 
-Last updated: 2026-04-25
+Last updated: 2026-04-27
 
 ## Current Phase
 
-The Godot 4 prototype is playable and has the core MVP loop, JSON level loading, generated fallback levels, placeholder art, debug tools, and a basic in-game editor.
+The Godot 4 prototype is playable and has the core MVP loop, JSON level loading, generated fallback levels, placeholder art, debug tools, and an improved in-game editor.
 
-Current focus is paused for cross-device handoff. No new gameplay feature is being developed in this documentation phase.
+Current focus is Level Editor V3 validation and handoff. The editor now supports rectangular board dimensions, level selection, new level creation, and saving edited JSON level files from the editor while running in Godot.
 
 ## Repository
 
@@ -77,7 +77,11 @@ Current configured level order:
 
 1. `res://levels/level_001.json`
 2. `res://levels/level_002.json`
-3. `generated`
+3. `res://levels/level_003.json`
+4. `generated`
+5. `generated`
+
+If `level_003.json` has not been created yet, selecting or playing that entry falls back to a generated level until the editor's `New Level` or `Save Level` workflow writes the file.
 
 ### Auto Generation
 
@@ -136,6 +140,15 @@ Road-related placeholder art was simplified into direction-neutral asphalt block
 
 - Press `E` to enter or exit editor mode.
 - Editor panel is shown in the right-side scroll area.
+- Editor has a `Level Files` section with:
+  - a level selector populated from `levels/levels.json`,
+  - current level path display,
+  - `New Level`,
+  - `Save Level`.
+- Editor supports board width changes from 4 to 14.
+- Editor supports board height changes from 4 to 12.
+- Editor supports initial fuel changes from 1 to 20.
+- Editor supports a current cash brush value from 1 to 9.
 - Supported brushes:
   - Ground
   - Cash
@@ -144,20 +157,28 @@ Road-related placeholder art was simplified into direction-neutral asphalt block
   - Goal
 - Click board cells to paint.
 - Start and goal are unique; placing one clears the previous one.
-- Cash default value is currently `2`.
+- Cash default value is currently `2`, and newly painted cash uses the current cash brush value.
 - Painting resets temporary play state such as roads, powered flags, and collected rewards.
+- Resizing the board preserves in-bounds cash and block cells, clamps start/goal back into the board, and clears temporary play state.
+- JSON level loading and export support independent `width` and `height` values.
+- Selecting a level in the editor loads that level entry.
+- `New Level` creates the next missing `res://levels/level_%03d.json` file and adds it to `levels/levels.json` before generated entries.
+- `Save Level` writes the current edited board back to the current JSON level file and updates `levels/levels.json`.
+- Editor validation checks:
+  - exactly one start,
+  - exactly one goal,
+  - start and goal inside the board,
+  - start/goal not overlapping cash or blocks.
 - `Copy JSON` copies the current board JSON to the clipboard.
+- `Copy levels.json Entry` copies the suggested quoted `res://levels/level_%03d.json` entry for the current level.
 - Press `E` again to return to play mode and test the edited board.
 
 ## Known Limitations
 
-- Editor cannot directly save files into `res://levels/`.
-- Editor does not yet support board size changes.
-- Editor does not yet support initial fuel editing.
-- Editor does not yet support custom cash values.
 - Editor has no undo/redo.
-- No direct UI for editing `levels/levels.json`.
-- Only 2 hand-authored JSON levels are currently present; the third entry is generated.
+- Editor saves are intended for development in the Godot editor; exported builds should not depend on writing to `res://`.
+- Editor can update `levels/levels.json` when saving/new-leveling, but does not yet provide a full list editor for reordering or deleting entries.
+- Only 2 hand-authored JSON level files are currently present unless `New Level` has been used to create `level_003.json`.
 - No formal solver that simulates every possible road-piece sequence.
 - No saved random seed or replay.
 - Placeholder art is good enough for a demo but not final art.
@@ -190,29 +211,19 @@ Road-related placeholder art was simplified into direction-neutral asphalt block
 
 ## Recommended Next Development Phase
 
-The most practical next phase is **Level Editor V2**.
+The most practical next phase is **level authoring and editor workflow hardening**.
 
 Suggested scope:
 
-- Add editor controls for board size.
-- Add editor control for initial fuel.
-- Add editor control for cash value.
-- Add simple validation:
-  - exactly one start,
-  - exactly one goal,
-  - start and goal inside board,
-  - blocks/cash do not overlap start or goal.
-- Add export assistance:
-  - continue supporting `Copy JSON`,
-  - optionally save exported JSON to `user://exported_levels/`,
-  - add a `Copy levels.json entry` or similar helper.
-- Document how to configure 5 levels from the current 3-level setup.
+- Use the editor to create and tune `level_003.json`, `level_004.json`, and `level_005.json`.
+- Add `Save As` if overwriting current levels feels risky.
+- Add level delete/reorder controls if needed.
+- Add a lightweight solvability check.
 
 Alternative next phases:
 
-- Add more JSON levels manually.
-- Add a lightweight solvability check.
 - Improve placeholder UI polish.
+- Split `scripts/Main.gd` after the level workflow is stable.
 
 ## How To Test Current Build
 
@@ -223,9 +234,13 @@ Manual Godot editor test:
 3. Verify level 1 loads from JSON.
 4. Place road pieces until the goal is connected.
 5. Confirm the next level button advances to level 2.
-6. Confirm level 3 is generated.
+6. Confirm missing JSON level entries fall back to generated content.
 7. Press `D` and verify debug info scrolls.
-8. Press `E`, paint a small edit, use `Copy JSON`, then return to play mode.
+8. Press `E`, use the level selector to switch between configured levels.
+9. Change width, height, initial fuel, and cash value.
+10. Paint a small edit, confirm validation says `OK`, and click `Save Level`.
+11. Stop running and inspect the corresponding JSON file to confirm it changed.
+12. Use `New Level` and confirm the new JSON file appears under `levels/` and `levels/levels.json` includes it.
 
 ## Phase Completion Rule
 
