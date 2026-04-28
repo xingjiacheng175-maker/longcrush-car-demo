@@ -1,20 +1,60 @@
 {
-  "id": "level_001",
-  "name": "First Detour",
-  "width": 8,
-  "height": 6,
-  "initial_fuel": 3,
-  "start": { "x": 0, "y": 0 },
-  "goal": { "x": 5, "y": 5 },
-  "cash": [
-	{ "x": 1, "y": 1, "value": 2 },
-	{ "x": 2, "y": 2, "value": 2 },
-	{ "x": 3, "y": 3, "value": 2 },
-	{ "x": 4, "y": 4, "value": 2 }
-  ],
-  "blocks": [
-	{ "x": 2, "y": 0 },
-	{ "x": 3, "y": 1 },
-	{ "x": 1, "y": 4 }
-  ]
+	"blocks": [
+		{
+			"x": 2,
+			"y": 0
+		},
+		{
+			"x": 3,
+			"y": 1
+		},
+		{
+			"x": 4,
+			"y": 2
+		},
+		{
+			"x": 1,
+			"y": 4
+		}
+	],
+	"cash": [
+		{
+			"value": 2,
+			"x": 1,
+			"y": 1
+		},
+		{
+			"value": 2,
+			"x": 5,
+			"y": 1
+		},
+		{
+			"value": 2,
+			"x": 2,
+			"y": 2
+		},
+		{
+			"value": 2,
+			"x": 3,
+			"y": 3
+		},
+		{
+			"value": 2,
+			"x": 4,
+			"y": 4
+		}
+	],
+	"goal": {
+		"x": 5,
+		"y": 5
+	},
+	"height": 8,
+	"id": "level_001",
+	"initial_fuel": 3,
+	"name": "Edited Level 1",
+	"start": {
+		"x": 0,
+		"y": 0
+	},
+	"width": 6
 }

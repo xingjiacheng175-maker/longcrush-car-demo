@@ -1,6 +1,6 @@
 # Handoff
 
-Last updated: 2026-04-27
+Last updated: 2026-04-28
 
 ## Purpose
 
@@ -35,6 +35,13 @@ The user works across a home Windows machine and a company Mac. Keep this file a
 - `Restart Level`: restart current level.
 - `Reload Level`: reload current level data.
 - `Next Level`: available after victory.
+
+## Current Gameplay Notes
+
+- Cash/fuel rewards are collected when paved over or when adjacent to the powered road network.
+- Collected reward cells become road cells and can extend the powered network.
+- Road-piece offers draw from small connector pieces plus the seven tetromino families.
+- A single offer avoids duplicate shapes that are equivalent by rotation.
 
 ## Current Level Setup
 

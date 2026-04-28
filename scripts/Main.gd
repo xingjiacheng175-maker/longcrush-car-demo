@@ -29,15 +29,16 @@ const LEVEL_CONFIGS := [
 ]
 
 const SHAPE_LIBRARY := [
-	{"id": "2-1", "cells": [{"x": 0, "y": 0}, {"x": 1, "y": 0}]},
-	{"id": "2-2", "cells": [{"x": 0, "y": 0}, {"x": 0, "y": 1}]},
-	{"id": "3-1", "cells": [{"x": 0, "y": 0}, {"x": 1, "y": 0}, {"x": 2, "y": 0}]},
-	{"id": "3-2", "cells": [{"x": 0, "y": 0}, {"x": 1, "y": 0}, {"x": 1, "y": 1}]},
-	{"id": "3-3", "cells": [{"x": 0, "y": 0}, {"x": 0, "y": 1}, {"x": 1, "y": 1}]},
-	{"id": "4-1", "cells": [{"x": 0, "y": 0}, {"x": 1, "y": 0}, {"x": 2, "y": 0}, {"x": 3, "y": 0}]},
-	{"id": "4-2", "cells": [{"x": 0, "y": 0}, {"x": 1, "y": 0}, {"x": 0, "y": 1}, {"x": 1, "y": 1}]},
-	{"id": "4-3", "cells": [{"x": 0, "y": 0}, {"x": 1, "y": 0}, {"x": 2, "y": 0}, {"x": 1, "y": 1}]},
-	{"id": "4-4", "cells": [{"x": 0, "y": 0}, {"x": 0, "y": 1}, {"x": 1, "y": 1}, {"x": 1, "y": 2}]},
+	{"id": "domino", "cells": [{"x": 0, "y": 0}, {"x": 1, "y": 0}]},
+	{"id": "triomino-i", "cells": [{"x": 0, "y": 0}, {"x": 1, "y": 0}, {"x": 2, "y": 0}]},
+	{"id": "triomino-l", "cells": [{"x": 0, "y": 0}, {"x": 1, "y": 0}, {"x": 1, "y": 1}]},
+	{"id": "tetromino-i", "cells": [{"x": 0, "y": 0}, {"x": 1, "y": 0}, {"x": 2, "y": 0}, {"x": 3, "y": 0}]},
+	{"id": "tetromino-o", "cells": [{"x": 0, "y": 0}, {"x": 1, "y": 0}, {"x": 0, "y": 1}, {"x": 1, "y": 1}]},
+	{"id": "tetromino-t", "cells": [{"x": 0, "y": 0}, {"x": 1, "y": 0}, {"x": 2, "y": 0}, {"x": 1, "y": 1}]},
+	{"id": "tetromino-s", "cells": [{"x": 1, "y": 0}, {"x": 2, "y": 0}, {"x": 0, "y": 1}, {"x": 1, "y": 1}]},
+	{"id": "tetromino-z", "cells": [{"x": 0, "y": 0}, {"x": 1, "y": 0}, {"x": 1, "y": 1}, {"x": 2, "y": 1}]},
+	{"id": "tetromino-j", "cells": [{"x": 0, "y": 0}, {"x": 0, "y": 1}, {"x": 1, "y": 1}, {"x": 2, "y": 1}]},
+	{"id": "tetromino-l", "cells": [{"x": 2, "y": 0}, {"x": 0, "y": 1}, {"x": 1, "y": 1}, {"x": 2, "y": 1}]},
 ]
 
 var rng := RandomNumberGenerator.new()
@@ -580,6 +581,7 @@ func _create_empty_grid(width: int, height: int) -> Array:
 				"consumed": false,
 				"has_road": false,
 				"fuel_value": 0,
+				"collected_fuel": false,
 			})
 		rows.append(row)
 	return rows
@@ -623,6 +625,7 @@ func _set_fuel(x: int, y: int, value: int) -> void:
 	grid[y][x]["fuel_value"] = value
 	grid[y][x]["consumed"] = false
 	grid[y][x]["has_road"] = false
+	grid[y][x]["collected_fuel"] = false
 
 
 func _is_protected_generation_cell(x: int, y: int) -> bool:
@@ -704,21 +707,54 @@ func _has_non_rock_path() -> bool:
 
 func _get_random_shapes(count: int) -> Array:
 	var shapes := []
-	var guaranteed_shapes: Array = [SHAPE_LIBRARY[0], SHAPE_LIBRARY[1]]
-	for i in range(min(count, guaranteed_shapes.size())):
-		var source: Dictionary = guaranteed_shapes[i]
-		shapes.append({
-			"id": "%s-safe-%d" % [source["id"], i],
-			"cells": _copy_points(source["cells"]),
-		})
+	var selected_signatures: Dictionary = {}
+	var unique_library: Array = _get_unique_shape_library()
+	var easy_shapes: Array = _filter_shapes_by_id(unique_library, ["domino", "triomino-i", "triomino-l"])
 
-	for i in range(shapes.size(), count):
-		var source: Dictionary = SHAPE_LIBRARY[rng.randi_range(0, SHAPE_LIBRARY.size() - 1)]
-		shapes.append({
-			"id": "%s-%d" % [source["id"], i],
-			"cells": _copy_points(source["cells"]),
-		})
+	if count > 0 and not easy_shapes.is_empty():
+		var easy_source: Dictionary = easy_shapes[rng.randi_range(0, easy_shapes.size() - 1)]
+		shapes.append(_make_shape_offer(easy_source, shapes.size()))
+		selected_signatures[_shape_rotation_signature(easy_source["cells"])] = true
+
+	var attempts := 0
+	while shapes.size() < count and selected_signatures.size() < unique_library.size() and attempts < 200:
+		attempts += 1
+		var source: Dictionary = unique_library[rng.randi_range(0, unique_library.size() - 1)]
+		var signature: String = _shape_rotation_signature(source["cells"])
+		if selected_signatures.has(signature):
+			continue
+		shapes.append(_make_shape_offer(source, shapes.size()))
+		selected_signatures[signature] = true
 	return shapes
+
+
+func _get_unique_shape_library() -> Array:
+	var unique_shapes := []
+	var seen_signatures: Dictionary = {}
+	for source in SHAPE_LIBRARY:
+		var source_shape: Dictionary = source
+		var signature: String = _shape_rotation_signature(source_shape["cells"])
+		if seen_signatures.has(signature):
+			continue
+		seen_signatures[signature] = true
+		unique_shapes.append(source_shape)
+	return unique_shapes
+
+
+func _filter_shapes_by_id(shapes: Array, ids: Array) -> Array:
+	var filtered := []
+	for source in shapes:
+		var source_shape: Dictionary = source
+		if ids.has(String(source_shape["id"])):
+			filtered.append(source_shape)
+	return filtered
+
+
+func _make_shape_offer(source: Dictionary, index: int) -> Dictionary:
+	return {
+		"id": "%s-%d" % [source["id"], index],
+		"cells": _copy_points(source["cells"]),
+	}
 
 
 func _copy_points(points: Array) -> Array:
@@ -726,6 +762,31 @@ func _copy_points(points: Array) -> Array:
 	for point in points:
 		copied.append({"x": int(point["x"]), "y": int(point["y"])})
 	return copied
+
+
+func _shape_rotation_signature(points: Array) -> String:
+	var signatures: Array[String] = []
+	var rotated: Array = _copy_points(points)
+	for i in range(4):
+		signatures.append(_shape_cells_signature(rotated))
+		rotated = _rotate_cells(rotated)
+	signatures.sort()
+	return signatures[0]
+
+
+func _shape_cells_signature(points: Array) -> String:
+	var parts: Array[String] = []
+	for point in points:
+		parts.append("%d,%d" % [int(point["x"]), int(point["y"])])
+	parts.sort()
+	return ";".join(parts)
+
+
+func _rotate_cells(points: Array) -> Array:
+	var rotated := []
+	for point in points:
+		rotated.append({"x": -int(point["y"]), "y": int(point["x"])})
+	return _normalize_points(rotated)
 
 
 func rotate_selected_shape() -> void:
@@ -743,18 +804,20 @@ func _rotate_shape(shape: Dictionary) -> Dictionary:
 	var rotated := []
 	for point in shape["cells"]:
 		rotated.append({"x": -int(point["y"]), "y": int(point["x"])})
+	return {"id": shape["id"], "cells": _normalize_points(rotated)}
 
+
+func _normalize_points(points: Array) -> Array:
 	var min_x := 999
 	var min_y := 999
-	for point in rotated:
+	for point in points:
 		min_x = min(min_x, int(point["x"]))
 		min_y = min(min_y, int(point["y"]))
 
 	var normalized := []
-	for point in rotated:
+	for point in points:
 		normalized.append({"x": int(point["x"]) - min_x, "y": int(point["y"]) - min_y})
-
-	return {"id": shape["id"], "cells": normalized}
+	return normalized
 
 
 func _on_cell_pressed(x: int, y: int) -> void:
@@ -789,7 +852,7 @@ func _on_cell_pressed(x: int, y: int) -> void:
 	var gained := _harvest_connected_fuel()
 	if gained > 0:
 		fuel += gained
-		message = "Collected %d fuel by driving through cash stops." % gained
+		message = "Collected %d fuel by reaching cash stops." % gained
 	else:
 		message = "Road extended. Keep the taxi moving."
 
@@ -871,15 +934,51 @@ func _is_cell_power_connectable(cell: Dictionary) -> bool:
 
 func _harvest_connected_fuel() -> int:
 	var gained := 0
-	for y in range(grid_height):
-		for x in range(grid_width):
-			var cell: Dictionary = grid[y][x]
+	var changed := true
+	while changed:
+		changed = false
+		_update_powered_status()
+		var fuel_points: Array[Vector2i] = []
+		for y in range(grid_height):
+			for x in range(grid_width):
+				if _is_fuel_collectable(x, y):
+					fuel_points.append(Vector2i(x, y))
+
+		for point in fuel_points:
+			var cell: Dictionary = grid[point.y][point.x]
 			if String(cell["type"]) != CELL_FUEL or bool(cell["consumed"]):
 				continue
-			if bool(cell["powered"]):
-				cell["consumed"] = true
-				gained += int(cell["fuel_value"])
+			gained += int(cell["fuel_value"])
+			_convert_fuel_to_road(point.x, point.y)
+			changed = true
 	return gained
+
+
+func _is_fuel_collectable(x: int, y: int) -> bool:
+	var cell: Dictionary = grid[y][x]
+	if String(cell["type"]) != CELL_FUEL or bool(cell["consumed"]):
+		return false
+	if bool(cell["powered"]):
+		return true
+
+	var directions: Array[Vector2i] = [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.DOWN, Vector2i.UP]
+	for direction in directions:
+		var neighbor_pos := Vector2i(x, y) + direction
+		if not _is_in_bounds(neighbor_pos.x, neighbor_pos.y):
+			continue
+		var neighbor: Dictionary = grid[neighbor_pos.y][neighbor_pos.x]
+		if bool(neighbor["powered"]) and _is_cell_power_connectable(neighbor):
+			return true
+	return false
+
+
+func _convert_fuel_to_road(x: int, y: int) -> void:
+	grid[y][x]["type"] = CELL_PATH
+	grid[y][x]["powered"] = true
+	grid[y][x]["consumed"] = true
+	grid[y][x]["has_road"] = true
+	grid[y][x]["fuel_value"] = 0
+	grid[y][x]["collected_fuel"] = true
 
 
 func _is_in_bounds(x: int, y: int) -> bool:
@@ -1317,6 +1416,9 @@ func _collect_level_stats() -> Dictionary:
 				stats["cash_total"] += 1
 				if bool(cell["consumed"]):
 					stats["cash_collected"] += 1
+			elif bool(cell.get("collected_fuel", false)):
+				stats["cash_total"] += 1
+				stats["cash_collected"] += 1
 			elif cell_type == CELL_ROCK:
 				stats["blocks"] += 1
 			if bool(cell["powered"]):
@@ -1371,6 +1473,7 @@ func _clear_cell(x: int, y: int) -> void:
 	grid[y][x]["consumed"] = false
 	grid[y][x]["has_road"] = false
 	grid[y][x]["fuel_value"] = 0
+	grid[y][x]["collected_fuel"] = false
 
 
 func _reset_play_state_after_edit() -> void:
@@ -1389,6 +1492,7 @@ func _reset_play_state_after_edit() -> void:
 				cell["powered"] = false
 				cell["consumed"] = false
 				cell["has_road"] = false
+				cell["collected_fuel"] = false
 			else:
 				cell["powered"] = false
 	grid[start_pos.y][start_pos.x]["type"] = CELL_START
@@ -1506,6 +1610,8 @@ func _cell_tooltip(cell: Dictionary) -> String:
 	if cell_type == CELL_END:
 		return "Goal"
 	if cell_type == CELL_PATH:
+		if bool(cell.get("collected_fuel", false)):
+			return "Collected cash road"
 		return "Powered road" if bool(cell["powered"]) else "Road"
 	if cell_type == CELL_FUEL:
 		if bool(cell["has_road"]):

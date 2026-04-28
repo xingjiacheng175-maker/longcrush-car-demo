@@ -1,6 +1,6 @@
 # Project Status
 
-Last updated: 2026-04-27
+Last updated: 2026-04-28
 
 ## Current Phase
 
@@ -53,8 +53,8 @@ Current focus is Level Editor V3 validation and handoff. The editor now supports
 ### Reward / Cash Rule
 
 - Reward cells can be paved over.
-- Unpaved reward cells are not collected by adjacent roads.
-- Paved reward cells are collected only after joining the powered network.
+- Reward cells are collected when they are paved over and join the powered network, or when they are adjacent to the powered road network.
+- A collected reward cell becomes a road cell and can extend the powered network.
 - Current prototype still treats reward gain in the fuel/cash loop; exact money-vs-fuel separation is not finalized.
 
 ### Obstacles
@@ -91,10 +91,10 @@ Current generated levels include:
 - A hidden generated route from start to goal.
 - Blocks prevented from spawning on the hidden route.
 - Cash preferentially placed along the hidden route.
-- Road-piece offers that always include:
-  - one horizontal 2-cell piece,
-  - one vertical 2-cell piece,
-  - one random piece.
+- Road-piece offers choose from a larger non-duplicate shape pool:
+  - small 2-cell and 3-cell pieces,
+  - the seven tetromino families,
+  - no same-offer duplicates that are equivalent by rotation.
 
 This gives generated levels a structural solution path, although it is not a full formal solver.
 
@@ -194,8 +194,8 @@ Road-related placeholder art was simplified into direction-neutral asphalt block
 - Initial fuel: `3`.
 - Road-piece placement cost: `1` fuel.
 - Victory: connect to goal.
-- Cash/reward must be paved over to collect.
-- Unpaved cash is not collected by adjacent road.
+- Cash/reward can be collected by paving over it or by touching it with the powered road network.
+- Collected cash/reward becomes road.
 - Walls/blocks are the primary path restriction.
 - Generated levels may remain until the core gameplay and editor flow are stable.
 - Collaboration docs should be kept in GitHub for switching between home Windows and company Mac.

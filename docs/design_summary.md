@@ -1,6 +1,6 @@
 # Design Summary
 
-Last updated: 2026-04-25
+Last updated: 2026-04-28
 
 ## Source Materials
 
@@ -32,7 +32,7 @@ Player flow:
 4. Hover over the grid to preview placement.
 5. Place the piece so it connects to the powered road network.
 6. Spend `1` fuel for each road placement.
-7. Pave over reward cells to gain more fuel/cash.
+7. Reach reward cells by paving over them or touching them with the powered road network to gain more fuel/cash.
 8. Win by connecting the road network to the goal.
 
 ## Current Confirmed Rules
@@ -53,10 +53,9 @@ The reward rule was changed during testing.
 
 Current confirmed rule:
 
-- Unpaved `CASH` cells are not collected by adjacent roads.
-- The player must place road onto a `CASH` cell.
-- A paved `CASH` cell becomes part of the road network.
-- Once that paved reward cell is connected to the taxi/start powered network, it is collected.
+- `CASH` cells can be collected by placing road onto them.
+- `CASH` cells can also be collected when they are adjacent to the taxi/start powered road network.
+- Once collected, the `CASH` cell becomes a road cell and can extend the powered network.
 
 Current prototype treats reward value as fuel/cash gain in the same flow. Whether money and fuel should become separate resources remains open.
 

@@ -1,6 +1,6 @@
 # Demo Operator Guide
 
-Last updated: 2026-04-27
+Last updated: 2026-04-28
 
 This guide is for designers opening the Godot demo to playtest or edit levels.
 
@@ -49,8 +49,8 @@ In the running demo:
 - Place road pieces to connect the taxi road network to the goal.
 - Each road placement costs `1` fuel.
 - If fuel reaches `0` before connecting the goal, the level is lost.
-- Cash cells must be paved over by road to be collected.
-- Cash is collected only when the paved cash cell joins the connected road network.
+- Cash cells are collected when road is placed onto them or when they touch the powered road network.
+- Collected cash cells become road and can extend the connected road network.
 - Blocks are obstacles and cannot be covered by road.
 - A road piece must connect to the powered road network to be placed.
 
@@ -295,4 +295,3 @@ Tune level 002
   - whether it was F6 tested,
   - whether it can be completed,
   - any known balance issue.
-
