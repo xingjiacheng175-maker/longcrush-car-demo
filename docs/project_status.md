@@ -34,6 +34,8 @@ Current focus is Level Editor V3 validation and handoff. The editor now supports
 
 - Main Godot scene.
 - Programmatic UI.
+- Default run window is configured to 1440x960.
+- Main gameplay UI uses a 1.5x scale for board cells, side panel, piece buttons, spacing, and HUD text.
 - Grid board.
 - Taxi/start tile.
 - Goal tile.

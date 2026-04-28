@@ -23,6 +23,7 @@ The user works across a home Windows machine and a company Mac. Keep this file a
 
 ## Current Controls
 
+- The default run window is 1440x960, and the main UI is scaled up for playtesting readability.
 - Left click a road piece: select it.
 - `R`: rotate selected road piece.
 - Left click board: place selected road piece if valid.

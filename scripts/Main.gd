@@ -19,6 +19,7 @@ const EDITOR_MIN_INITIAL_FUEL := 1
 const EDITOR_MAX_INITIAL_FUEL := 20
 const EDITOR_MIN_CASH_VALUE := 1
 const EDITOR_MAX_CASH_VALUE := 9
+const UI_SCALE := 1.5
 
 const LEVEL_CONFIGS := [
 	{"level": 1, "size": 6, "fuel_count": 4, "rocks": 2},
@@ -152,21 +153,21 @@ func _unhandled_input(event: InputEvent) -> void:
 func _build_ui() -> void:
 	var root := VBoxContainer.new()
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
-	root.add_theme_constant_override("separation", 12)
-	root.offset_left = 18
-	root.offset_top = 18
-	root.offset_right = -18
-	root.offset_bottom = -18
+	root.add_theme_constant_override("separation", _ui_size(12))
+	root.offset_left = _ui_size(18)
+	root.offset_top = _ui_size(18)
+	root.offset_right = -_ui_size(18)
+	root.offset_bottom = -_ui_size(18)
 	add_child(root)
 
 	var title := Label.new()
 	title.text = "Money Road: Taxi Detour Prototype"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 24)
+	title.add_theme_font_size_override("font_size", _ui_size(24))
 	root.add_child(title)
 
 	var hud := HBoxContainer.new()
-	hud.add_theme_constant_override("separation", 16)
+	hud.add_theme_constant_override("separation", _ui_size(16))
 	root.add_child(hud)
 
 	level_label = _make_hud_label()
@@ -180,27 +181,27 @@ func _build_ui() -> void:
 
 	var main_row := HBoxContainer.new()
 	main_row.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	main_row.add_theme_constant_override("separation", 18)
+	main_row.add_theme_constant_override("separation", _ui_size(18))
 	root.add_child(main_row)
 
 	board_grid = GridContainer.new()
 	board_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	board_grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	board_grid.add_theme_constant_override("h_separation", 4)
-	board_grid.add_theme_constant_override("v_separation", 4)
+	board_grid.add_theme_constant_override("h_separation", _ui_size(4))
+	board_grid.add_theme_constant_override("v_separation", _ui_size(4))
 	board_grid.mouse_exited.connect(_on_board_mouse_exited)
 	main_row.add_child(board_grid)
 
 	var side_scroll := ScrollContainer.new()
-	side_scroll.custom_minimum_size = Vector2(250, 0)
+	side_scroll.custom_minimum_size = Vector2(_ui_size(375), 0)
 	side_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	side_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	main_row.add_child(side_scroll)
 
 	var side_panel := VBoxContainer.new()
-	side_panel.custom_minimum_size = Vector2(230, 0)
+	side_panel.custom_minimum_size = Vector2(_ui_size(345), 0)
 	side_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	side_panel.add_theme_constant_override("separation", 10)
+	side_panel.add_theme_constant_override("separation", _ui_size(10))
 	side_scroll.add_child(side_panel)
 
 	var pieces_title := Label.new()
@@ -209,7 +210,7 @@ func _build_ui() -> void:
 	side_panel.add_child(pieces_title)
 
 	pieces_container = VBoxContainer.new()
-	pieces_container.add_theme_constant_override("separation", 8)
+	pieces_container.add_theme_constant_override("separation", _ui_size(8))
 	side_panel.add_child(pieces_container)
 
 	var rotate_button := Button.new()
@@ -234,7 +235,7 @@ func _build_ui() -> void:
 
 	message_label = Label.new()
 	message_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	message_label.custom_minimum_size = Vector2(220, 0)
+	message_label.custom_minimum_size = Vector2(_ui_size(330), 0)
 	message_label.text = ""
 	side_panel.add_child(message_label)
 
@@ -243,7 +244,7 @@ func _build_ui() -> void:
 	side_panel.add_child(debug_panel)
 
 	var debug_box := VBoxContainer.new()
-	debug_box.add_theme_constant_override("separation", 6)
+	debug_box.add_theme_constant_override("separation", _ui_size(6))
 	debug_panel.add_child(debug_box)
 
 	var debug_title := Label.new()
@@ -253,7 +254,7 @@ func _build_ui() -> void:
 
 	debug_label = Label.new()
 	debug_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	debug_label.custom_minimum_size = Vector2(220, 0)
+	debug_label.custom_minimum_size = Vector2(_ui_size(330), 0)
 	debug_label.text = ""
 	debug_box.add_child(debug_label)
 
@@ -262,7 +263,7 @@ func _build_ui() -> void:
 	side_panel.add_child(editor_panel)
 
 	var editor_box := VBoxContainer.new()
-	editor_box.add_theme_constant_override("separation", 6)
+	editor_box.add_theme_constant_override("separation", _ui_size(6))
 	editor_panel.add_child(editor_box)
 
 	var editor_title := Label.new()
@@ -287,11 +288,11 @@ func _build_ui() -> void:
 
 	editor_level_path_label = Label.new()
 	editor_level_path_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	editor_level_path_label.custom_minimum_size = Vector2(220, 0)
+	editor_level_path_label.custom_minimum_size = Vector2(_ui_size(330), 0)
 	editor_box.add_child(editor_level_path_label)
 
 	var level_file_buttons := HBoxContainer.new()
-	level_file_buttons.add_theme_constant_override("separation", 4)
+	level_file_buttons.add_theme_constant_override("separation", _ui_size(4))
 	editor_box.add_child(level_file_buttons)
 
 	var new_level_button := Button.new()
@@ -333,14 +334,14 @@ func _build_ui() -> void:
 	editor_box.add_child(brushes_title)
 
 	var brush_row_1 := HBoxContainer.new()
-	brush_row_1.add_theme_constant_override("separation", 4)
+	brush_row_1.add_theme_constant_override("separation", _ui_size(4))
 	editor_box.add_child(brush_row_1)
 	brush_row_1.add_child(_make_editor_brush_button("Ground", CELL_EMPTY))
 	brush_row_1.add_child(_make_editor_brush_button("Cash", CELL_FUEL))
 	brush_row_1.add_child(_make_editor_brush_button("Block", CELL_ROCK))
 
 	var brush_row_2 := HBoxContainer.new()
-	brush_row_2.add_theme_constant_override("separation", 4)
+	brush_row_2.add_theme_constant_override("separation", _ui_size(4))
 	editor_box.add_child(brush_row_2)
 	brush_row_2.add_child(_make_editor_brush_button("Start", CELL_START))
 	brush_row_2.add_child(_make_editor_brush_button("Goal", CELL_END))
@@ -357,21 +358,25 @@ func _build_ui() -> void:
 
 	editor_validation_label = Label.new()
 	editor_validation_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	editor_validation_label.custom_minimum_size = Vector2(220, 0)
+	editor_validation_label.custom_minimum_size = Vector2(_ui_size(330), 0)
 	editor_box.add_child(editor_validation_label)
 
 	editor_json_text = TextEdit.new()
-	editor_json_text.custom_minimum_size = Vector2(220, 220)
+	editor_json_text.custom_minimum_size = Vector2(_ui_size(330), _ui_size(330))
 	editor_json_text.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
 	editor_json_text.editable = false
 	editor_box.add_child(editor_json_text)
+
+
+func _ui_size(value: int) -> int:
+	return int(round(float(value) * UI_SCALE))
 
 
 func _make_hud_label() -> Label:
 	var label := Label.new()
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 18)
+	label.add_theme_font_size_override("font_size", _ui_size(18))
 	return label
 
 
@@ -392,7 +397,7 @@ func _make_editor_spinbox_row(label_text: String, spinbox: SpinBox) -> HBoxConta
 	row.add_theme_constant_override("separation", 6)
 	var label := Label.new()
 	label.text = label_text
-	label.custom_minimum_size = Vector2(98, 0)
+	label.custom_minimum_size = Vector2(_ui_size(147), 0)
 	row.add_child(label)
 	row.add_child(spinbox)
 	return row
@@ -1564,10 +1569,10 @@ func _refresh_board_visuals() -> void:
 func _get_cell_pixel_size() -> int:
 	var longest_side: int = max(grid_width, grid_height)
 	if longest_side <= 6:
-		return 52
+		return _ui_size(52)
 	if longest_side <= 8:
-		return 44
-	return 36
+		return _ui_size(44)
+	return _ui_size(36)
 
 
 func _apply_cell_button_visual(button: Button, x: int, y: int) -> void:
@@ -1683,7 +1688,7 @@ func _refresh_pieces() -> void:
 
 	for i in range(current_shapes.size()):
 		var button := Button.new()
-		button.custom_minimum_size = Vector2(190, 82)
+		button.custom_minimum_size = Vector2(_ui_size(285), _ui_size(123))
 		button.text = _shape_preview_text(current_shapes[i])
 		button.tooltip_text = "Select this road piece."
 		if i == selected_shape_index:
