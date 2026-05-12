@@ -33,6 +33,7 @@ The user works across a home Windows machine and a company Mac. Keep this file a
 - In editor mode, use the level selector to load configured level entries.
 - In editor mode, use `New Level` to create the next missing JSON level file.
 - In editor mode, use `Save Level` to write the current edit back to the current JSON level file.
+- In editor mode, use `Portal A` to paint exactly two linked portal cells.
 - `Restart Level`: restart current level.
 - `Reload Level`: reload current level data.
 - `Jump To Level` selector + `Load Level`: directly load a configured level entry.
@@ -42,6 +43,7 @@ The user works across a home Windows machine and a company Mac. Keep this file a
 
 - Cash/fuel rewards are collected when paved over or when adjacent to the powered road network.
 - Collected reward cells become road cells and can extend the powered network.
+- Portal A cells are linked. When the powered road network reaches one Portal A cell, the paired Portal A cell also becomes powered.
 - Road-piece offers draw from small connector pieces plus the seven tetromino families.
 - A single offer avoids duplicate shapes that are equivalent by rotation.
 
@@ -118,6 +120,10 @@ Example:
   ],
   "blocks": [
     { "x": 2, "y": 0 }
+  ],
+  "portals": [
+    { "x": 1, "y": 4, "pair": "A" },
+    { "x": 4, "y": 1, "pair": "A" }
   ]
 }
 ```
@@ -131,8 +137,10 @@ Example:
 - Board height can be changed from 4 to 12.
 - Initial fuel can be changed from 1 to 20.
 - Current cash brush value can be changed from 1 to 9.
+- The `Portal A` brush paints linked portal cells. Use exactly two Portal A cells, or no portals.
 - Resizing preserves in-bounds cash and blocks, clamps start/goal inside the board, and resets temporary play state.
 - JSON level loading and export support independent `width` and `height` values.
+- JSON level loading and export support optional `portals` data.
 - Validation is shown in the editor panel before export.
 - `Copy JSON` copies the current board JSON if validation passes.
 - `Copy levels.json Entry` copies the suggested quoted level path for `levels/levels.json`.
@@ -141,29 +149,26 @@ Example:
 
 ## Recommended Next Phase
 
-Recommended next phase: **level authoring and editor workflow hardening**.
+Recommended next phase: **Special Tiles V2: roller or mole**.
 
 Before coding, tell the user:
 
 - Plan:
-  - use the editor to author more JSON levels,
-  - add `Save As` if needed,
-  - add delete/reorder controls if needed,
-  - consider a lightweight solvability check,
-  - document the authoring workflow.
+  - add one special tile at a time,
+  - recommended order is roller first, then mole,
+  - keep the tile editable in the runtime editor,
+  - save and load it through JSON.
 - File modification scope:
   - likely `scripts/Main.gd`,
   - possibly `docs/project_status.md`,
   - possibly `docs/handoff.md`,
-  - possibly `levels/levels.json`,
-  - optionally new JSON files under `levels/`.
+  - possibly `docs/demo_operator_guide_zh.md`.
 - Testing method:
   - run F6 in Godot,
   - enter editor with `E`,
-  - switch between levels,
-  - create a new level,
-  - save and reload it,
-  - verify progression through levels.
+  - paint the new special tile,
+  - save and reload a test level,
+  - verify play-mode behavior.
 
 Wait for user confirmation before modifying files.
 

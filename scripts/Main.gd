@@ -6,6 +6,8 @@ const CELL_END := "end"
 const CELL_PATH := "path"
 const CELL_FUEL := "fuel"
 const CELL_ROCK := "rock"
+const CELL_PORTAL := "portal"
+const PORTAL_PAIR_A := "A"
 
 const INITIAL_FUEL := 3
 const FUEL_TO_SCORE_RATIO := 10
@@ -360,6 +362,7 @@ func _build_ui() -> void:
 	editor_box.add_child(brush_row_2)
 	brush_row_2.add_child(_make_editor_brush_button("Start", CELL_START))
 	brush_row_2.add_child(_make_editor_brush_button("Goal", CELL_END))
+	brush_row_2.add_child(_make_editor_brush_button("Portal A", CELL_PORTAL))
 
 	var copy_json_button := Button.new()
 	copy_json_button.text = "Copy JSON"
@@ -520,6 +523,14 @@ func _load_level_from_path(path: String) -> bool:
 		if _is_in_bounds(block_point.x, block_point.y) and grid[block_point.y][block_point.x]["type"] == CELL_EMPTY:
 			grid[block_point.y][block_point.x]["type"] = CELL_ROCK
 
+	for portal_entry in level_data.get("portals", []):
+		if not portal_entry is Dictionary:
+			continue
+		var portal_data: Dictionary = portal_entry
+		var portal_point := _point_from_dict(portal_data)
+		if _is_in_bounds(portal_point.x, portal_point.y) and grid[portal_point.y][portal_point.x]["type"] == CELL_EMPTY:
+			_set_portal(portal_point.x, portal_point.y, String(portal_data.get("pair", PORTAL_PAIR_A)))
+
 	message = "Loaded %s from JSON: %dx%d, fuel %d." % [
 		String(level_data.get("name", path)),
 		grid_width,
@@ -550,6 +561,53 @@ func _validate_level_data(level_data: Dictionary, path: String) -> bool:
 	if json_start == json_goal:
 		push_warning("Level JSON start and goal overlap: %s" % path)
 		return false
+	if not _validate_level_portals(level_data, width, height, json_start, json_goal, path):
+		return false
+	return true
+
+
+func _validate_level_portals(level_data: Dictionary, width: int, height: int, json_start: Vector2i, json_goal: Vector2i, path: String) -> bool:
+	var portals = level_data.get("portals", [])
+	if not portals is Array:
+		push_warning("Level JSON portals must be an array: %s" % path)
+		return false
+	if portals.is_empty():
+		return true
+	if portals.size() != 2:
+		push_warning("Level JSON must contain exactly 0 or 2 portals for now: %s" % path)
+		return false
+
+	var seen: Dictionary = {}
+	var blocked_points: Dictionary = {}
+	for cash_entry in level_data.get("cash", []):
+		if cash_entry is Dictionary:
+			blocked_points[_point_from_dict(cash_entry)] = "cash"
+	for block_entry in level_data.get("blocks", []):
+		if block_entry is Dictionary:
+			blocked_points[_point_from_dict(block_entry)] = "block"
+	for portal_entry in portals:
+		if not portal_entry is Dictionary:
+			push_warning("Level JSON portal entry is invalid: %s" % path)
+			return false
+		var portal_data: Dictionary = portal_entry
+		var portal_point := _point_from_dict(portal_data)
+		var portal_pair := String(portal_data.get("pair", PORTAL_PAIR_A))
+		if portal_pair != PORTAL_PAIR_A:
+			push_warning("Level JSON only supports Portal A for now: %s" % path)
+			return false
+		if not _is_point_in_bounds(portal_point, width, height):
+			push_warning("Level JSON portal is out of bounds: %s" % path)
+			return false
+		if portal_point == json_start or portal_point == json_goal:
+			push_warning("Level JSON portal overlaps start or goal: %s" % path)
+			return false
+		if blocked_points.has(portal_point):
+			push_warning("Level JSON portal overlaps cash or block: %s" % path)
+			return false
+		if seen.has(portal_point):
+			push_warning("Level JSON has duplicate portal cells: %s" % path)
+			return false
+		seen[portal_point] = true
 	return true
 
 
@@ -602,6 +660,7 @@ func _create_empty_grid(width: int, height: int) -> Array:
 				"has_road": false,
 				"fuel_value": 0,
 				"collected_fuel": false,
+				"portal_pair": "",
 			})
 		rows.append(row)
 	return rows
@@ -643,6 +702,16 @@ func _place_fuels(count: int) -> void:
 func _set_fuel(x: int, y: int, value: int) -> void:
 	grid[y][x]["type"] = CELL_FUEL
 	grid[y][x]["fuel_value"] = value
+	grid[y][x]["consumed"] = false
+	grid[y][x]["has_road"] = false
+	grid[y][x]["collected_fuel"] = false
+	grid[y][x]["portal_pair"] = ""
+
+
+func _set_portal(x: int, y: int, pair: String = PORTAL_PAIR_A) -> void:
+	grid[y][x]["type"] = CELL_PORTAL
+	grid[y][x]["portal_pair"] = pair
+	grid[y][x]["fuel_value"] = 0
 	grid[y][x]["consumed"] = false
 	grid[y][x]["has_road"] = false
 	grid[y][x]["collected_fuel"] = false
@@ -866,6 +935,8 @@ func _on_cell_pressed(x: int, y: int) -> void:
 			grid[cell_y][cell_x]["has_road"] = true
 		elif grid[cell_y][cell_x]["type"] == CELL_FUEL:
 			grid[cell_y][cell_x]["has_road"] = true
+		elif grid[cell_y][cell_x]["type"] == CELL_PORTAL:
+			grid[cell_y][cell_x]["has_road"] = true
 
 	fuel -= 1
 	_update_powered_status()
@@ -910,7 +981,7 @@ func _is_placement_valid(shape: Dictionary, origin: Vector2i) -> bool:
 		var cell_type := String(cell["type"])
 		if cell_type == CELL_ROCK or cell_type == CELL_END:
 			return false
-		if cell_type == CELL_EMPTY or (cell_type == CELL_FUEL and not bool(cell["has_road"])):
+		if cell_type == CELL_EMPTY or (cell_type == CELL_FUEL and not bool(cell["has_road"])) or (cell_type == CELL_PORTAL and not bool(cell["has_road"])):
 			adds_new_road = true
 		if bool(cell["powered"]) and _is_cell_power_connectable(cell):
 			touches_powered_road = true
@@ -929,6 +1000,13 @@ func _update_powered_status() -> void:
 
 	while not queue.is_empty():
 		var current: Vector2i = queue.pop_front()
+		var current_cell: Dictionary = grid[current.y][current.x]
+		if String(current_cell["type"]) == CELL_PORTAL:
+			for linked_portal in _get_linked_portals(current):
+				if bool(grid[linked_portal.y][linked_portal.x]["powered"]):
+					continue
+				grid[linked_portal.y][linked_portal.x]["powered"] = true
+				queue.append(linked_portal)
 		for direction in directions:
 			var next_pos: Vector2i = current + direction
 			if not _is_in_bounds(next_pos.x, next_pos.y):
@@ -942,7 +1020,7 @@ func _update_powered_status() -> void:
 
 
 func _is_power_connectable(cell_type: String) -> bool:
-	return cell_type == CELL_START or cell_type == CELL_PATH or cell_type == CELL_END
+	return cell_type == CELL_START or cell_type == CELL_PATH or cell_type == CELL_END or cell_type == CELL_PORTAL
 
 
 func _is_cell_power_connectable(cell: Dictionary) -> bool:
@@ -950,6 +1028,38 @@ func _is_cell_power_connectable(cell: Dictionary) -> bool:
 	if cell_type == CELL_FUEL:
 		return bool(cell["has_road"])
 	return _is_power_connectable(cell_type)
+
+
+func _get_linked_portals(portal_pos: Vector2i) -> Array[Vector2i]:
+	var linked: Array[Vector2i] = []
+	if not _is_in_bounds(portal_pos.x, portal_pos.y):
+		return linked
+	var source_cell: Dictionary = grid[portal_pos.y][portal_pos.x]
+	var pair: String = String(source_cell.get("portal_pair", ""))
+	if String(source_cell["type"]) != CELL_PORTAL or pair == "":
+		return linked
+
+	for y in range(grid_height):
+		for x in range(grid_width):
+			var cell: Dictionary = grid[y][x]
+			if String(cell["type"]) != CELL_PORTAL:
+				continue
+			if String(cell.get("portal_pair", "")) != pair:
+				continue
+			var other_pos := Vector2i(x, y)
+			if other_pos != portal_pos:
+				linked.append(other_pos)
+	return linked
+
+
+func _get_portal_cells(pair: String = PORTAL_PAIR_A) -> Array[Vector2i]:
+	var portals: Array[Vector2i] = []
+	for y in range(grid_height):
+		for x in range(grid_width):
+			var cell: Dictionary = grid[y][x]
+			if String(cell["type"]) == CELL_PORTAL and String(cell.get("portal_pair", "")) == pair:
+				portals.append(Vector2i(x, y))
+	return portals
 
 
 func _harvest_connected_fuel() -> int:
@@ -1409,13 +1519,16 @@ func _validate_current_editor_level() -> Dictionary:
 				start_count += 1
 			elif cell_type == CELL_END:
 				goal_count += 1
-			if (cell_type == CELL_FUEL or cell_type == CELL_ROCK) and (point == start_pos or point == goal_pos):
-				errors.append("Start/goal cannot overlap cash or blocks.")
+			if (cell_type == CELL_FUEL or cell_type == CELL_ROCK or cell_type == CELL_PORTAL) and (point == start_pos or point == goal_pos):
+				errors.append("Start/goal cannot overlap cash, blocks, or portals.")
 
 	if start_count != 1:
 		errors.append("Level must contain exactly one start.")
 	if goal_count != 1:
 		errors.append("Level must contain exactly one goal.")
+	var portal_count := _get_portal_cells(PORTAL_PAIR_A).size()
+	if portal_count != 0 and portal_count != 2:
+		errors.append("Portal A must contain exactly two cells, or none.")
 	if _is_in_bounds(start_pos.x, start_pos.y) and String(grid[start_pos.y][start_pos.x]["type"]) != CELL_START:
 		errors.append("Start marker does not match the start cell.")
 	if _is_in_bounds(goal_pos.x, goal_pos.y) and String(grid[goal_pos.y][goal_pos.x]["type"]) != CELL_END:
@@ -1451,6 +1564,7 @@ func _refresh_debug_panel() -> void:
 		"Selected: %s" % selected_text,
 		"Cash: %d / %d" % [int(stats["cash_collected"]), int(stats["cash_total"])],
 		"Blocks: %d" % int(stats["blocks"]),
+		"Portals: %d" % int(stats["portals"]),
 		"Powered: %d" % int(stats["powered"]),
 		"Route cells: %d" % generated_route_cells.size(),
 	])
@@ -1461,6 +1575,7 @@ func _collect_level_stats() -> Dictionary:
 		"cash_total": 0,
 		"cash_collected": 0,
 		"blocks": 0,
+		"portals": 0,
 		"powered": 0,
 	}
 	for row in grid:
@@ -1475,6 +1590,8 @@ func _collect_level_stats() -> Dictionary:
 				stats["cash_collected"] += 1
 			elif cell_type == CELL_ROCK:
 				stats["blocks"] += 1
+			elif cell_type == CELL_PORTAL:
+				stats["portals"] += 1
 			if bool(cell["powered"]):
 				stats["powered"] += 1
 	return stats
@@ -1506,11 +1623,17 @@ func _paint_editor_cell(x: int, y: int) -> void:
 			message = "Move start/goal before painting this cell."
 			_refresh_hud()
 			return
+		if editor_brush == CELL_PORTAL and String(grid[y][x]["type"]) != CELL_PORTAL and _get_portal_cells(PORTAL_PAIR_A).size() >= 2:
+			message = "Portal A already has two cells. Paint Ground first."
+			_refresh_hud()
+			return
 		_clear_cell(x, y)
 		if editor_brush == CELL_FUEL:
 			_set_fuel(x, y, editor_cash_value)
 		elif editor_brush == CELL_ROCK:
 			grid[y][x]["type"] = CELL_ROCK
+		elif editor_brush == CELL_PORTAL:
+			_set_portal(x, y, PORTAL_PAIR_A)
 		else:
 			grid[y][x]["type"] = CELL_EMPTY
 
@@ -1528,6 +1651,7 @@ func _clear_cell(x: int, y: int) -> void:
 	grid[y][x]["has_road"] = false
 	grid[y][x]["fuel_value"] = 0
 	grid[y][x]["collected_fuel"] = false
+	grid[y][x]["portal_pair"] = ""
 
 
 func _reset_play_state_after_edit() -> void:
@@ -1543,6 +1667,11 @@ func _reset_play_state_after_edit() -> void:
 			if String(cell["type"]) == CELL_PATH:
 				_clear_cell(x, y)
 			elif String(cell["type"]) == CELL_FUEL:
+				cell["powered"] = false
+				cell["consumed"] = false
+				cell["has_road"] = false
+				cell["collected_fuel"] = false
+			elif String(cell["type"]) == CELL_PORTAL:
 				cell["powered"] = false
 				cell["consumed"] = false
 				cell["has_road"] = false
@@ -1565,6 +1694,7 @@ func _build_current_level_json_text() -> String:
 		"goal": {"x": goal_pos.x, "y": goal_pos.y},
 		"cash": [],
 		"blocks": [],
+		"portals": [],
 	}
 
 	for y in range(grid_height):
@@ -1581,6 +1711,12 @@ func _build_current_level_json_text() -> String:
 				level_data["blocks"].append({
 					"x": x,
 					"y": y,
+				})
+			elif cell_type == CELL_PORTAL:
+				level_data["portals"].append({
+					"x": x,
+					"y": y,
+					"pair": String(cell.get("portal_pair", PORTAL_PAIR_A)),
 				})
 	return JSON.stringify(level_data, "\t")
 
@@ -1626,12 +1762,15 @@ func _get_cell_pixel_size() -> int:
 
 func _apply_cell_button_visual(button: Button, x: int, y: int) -> void:
 	var preview_state: String = _get_preview_state(x, y)
-	button.text = ""
-	button.icon = null if preview_state != "" else _cell_texture(grid[y][x])
-	button.tooltip_text = "(%d, %d) %s" % [x, y, _cell_tooltip(grid[y][x])]
-	button.add_theme_stylebox_override("normal", _cell_style(grid[y][x], false, preview_state))
-	button.add_theme_stylebox_override("hover", _cell_style(grid[y][x], true, preview_state))
-	button.add_theme_stylebox_override("pressed", _cell_style(grid[y][x], true, preview_state))
+	var cell: Dictionary = grid[y][x]
+	var shows_portal: bool = preview_state == "" and String(cell["type"]) == CELL_PORTAL
+	button.text = String(cell.get("portal_pair", PORTAL_PAIR_A)) if shows_portal else ""
+	button.icon = null if preview_state != "" or shows_portal else _cell_texture(cell)
+	button.add_theme_font_size_override("font_size", _ui_size(18))
+	button.tooltip_text = "(%d, %d) %s" % [x, y, _cell_tooltip(cell)]
+	button.add_theme_stylebox_override("normal", _cell_style(cell, false, preview_state))
+	button.add_theme_stylebox_override("hover", _cell_style(cell, true, preview_state))
+	button.add_theme_stylebox_override("pressed", _cell_style(cell, true, preview_state))
 
 
 func _cell_texture(cell: Dictionary) -> Texture2D:
@@ -1650,6 +1789,8 @@ func _cell_texture(cell: Dictionary) -> Texture2D:
 		return _get_tile_texture("cash")
 	if cell_type == CELL_ROCK:
 		return _get_tile_texture("block")
+	if cell_type == CELL_PORTAL:
+		return _get_tile_texture("ground")
 	return _get_tile_texture("ground")
 
 
@@ -1675,6 +1816,10 @@ func _cell_tooltip(cell: Dictionary) -> String:
 		return "Cash +%d" % int(cell["fuel_value"])
 	if cell_type == CELL_ROCK:
 		return "Block"
+	if cell_type == CELL_PORTAL:
+		var powered_text := "powered " if bool(cell["powered"]) else ""
+		var road_text := "road-connected " if bool(cell["has_road"]) else ""
+		return "%s%sPortal %s" % [powered_text.capitalize(), road_text, String(cell.get("portal_pair", PORTAL_PAIR_A))]
 	return "Ground"
 
 
@@ -1702,6 +1847,9 @@ func _cell_style(cell: Dictionary, hover: bool = false, preview_state: String = 
 	elif cell_type == CELL_ROCK:
 		background = Color("#57534e")
 		border = Color("#292524")
+	elif cell_type == CELL_PORTAL:
+		background = Color("#4c1d95") if bool(cell["powered"]) else Color("#312e81")
+		border = Color("#f0abfc") if bool(cell["has_road"]) else Color("#c4b5fd")
 
 	if preview_state == "valid":
 		background = Color("#facc15")

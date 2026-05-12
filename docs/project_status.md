@@ -6,7 +6,7 @@ Last updated: 2026-05-12
 
 The Godot 4 prototype is playable and has the core MVP loop, JSON level loading, generated fallback levels, placeholder art, debug tools, and an improved in-game editor.
 
-Current focus is Level Editor V3 validation and handoff. The editor now supports rectangular board dimensions, level selection, new level creation, and saving edited JSON level files from the editor while running in Godot.
+Current focus is special-tile gameplay. Special Tiles V1 adds paired portals that can be authored in the runtime editor and saved in JSON.
 
 ## Repository
 
@@ -65,6 +65,15 @@ Current focus is Level Editor V3 validation and handoff. The editor now supports
 - Blocks/walls are hard obstacles.
 - Road pieces cannot cover blocks.
 - Generated levels avoid putting blocks on the hidden generated route.
+
+### Special Tiles
+
+- Portal V1 is implemented.
+- The editor supports a `Portal A` brush.
+- A valid Portal A setup contains exactly two portal cells.
+- When the powered road network reaches one Portal A cell, the paired Portal A cell is treated as connected.
+- Roads can then continue from the paired portal side.
+- Portal cells are saved to and loaded from JSON through the optional `portals` array.
 
 ### Level Loading
 
@@ -133,6 +142,7 @@ Road-related placeholder art was simplified into direction-neutral asphalt block
   - selected road piece id,
   - cash collected / total cash,
   - block count,
+  - portal count,
   - powered cell count,
   - generated hidden route cell count.
 - Debug board overlays:
@@ -158,12 +168,14 @@ Road-related placeholder art was simplified into direction-neutral asphalt block
   - Block
   - Start
   - Goal
+  - Portal A
 - Click board cells to paint.
 - Start and goal are unique; placing one clears the previous one.
 - Cash default value is currently `2`, and newly painted cash uses the current cash brush value.
 - Painting resets temporary play state such as roads, powered flags, and collected rewards.
 - Resizing the board preserves in-bounds cash and block cells, clamps start/goal back into the board, and clears temporary play state.
 - JSON level loading and export support independent `width` and `height` values.
+- JSON level loading and export support optional `portals` data.
 - Selecting a level in the editor loads that level entry.
 - `New Level` creates the next missing `res://levels/level_%03d.json` file and adds it to `levels/levels.json` before generated entries.
 - `Save Level` writes the current edited board back to the current JSON level file and updates `levels/levels.json`.
@@ -171,7 +183,8 @@ Road-related placeholder art was simplified into direction-neutral asphalt block
   - exactly one start,
   - exactly one goal,
   - start and goal inside the board,
-  - start/goal not overlapping cash or blocks.
+  - start/goal not overlapping cash, blocks, or portals,
+  - Portal A must have exactly two cells, or none.
 - `Copy JSON` copies the current board JSON to the clipboard.
 - `Copy levels.json Entry` copies the suggested quoted `res://levels/level_%03d.json` entry for the current level.
 - Press `E` again to return to play mode and test the edited board.
@@ -184,6 +197,9 @@ Road-related placeholder art was simplified into direction-neutral asphalt block
 - Only 2 hand-authored JSON level files are currently present unless `New Level` has been used to create `level_003.json`.
 - No formal solver that simulates every possible road-piece sequence.
 - No saved random seed or replay.
+- Special tiles currently only include one portal pair (`Portal A`).
+- Portal V1 does not yet support multiple named portal pairs.
+- Roller and mole obstacle types have not been implemented yet.
 - Placeholder art is good enough for a demo but not final art.
 - Cash value is mostly conveyed through tooltip/logic rather than polished UI.
 - Godot CLI was not available in the Codex environment, so runtime validation has relied on user F6 testing in the Godot editor.
@@ -200,6 +216,7 @@ Road-related placeholder art was simplified into direction-neutral asphalt block
 - Cash/reward can be collected by paving over it or by touching it with the powered road network.
 - Collected cash/reward becomes road.
 - Walls/blocks are the primary path restriction.
+- Portal A links two board cells; connecting one portal to the powered road network also powers the paired portal.
 - Generated levels may remain until the core gameplay and editor flow are stable.
 - Collaboration docs should be kept in GitHub for switching between home Windows and company Mac.
 
@@ -210,18 +227,22 @@ Road-related placeholder art was simplified into direction-neutral asphalt block
 - Should generated levels eventually use a real solver?
 - Should editor exports save directly to project files, or stay clipboard-based for safety?
 - Should level order be edited in-game, or manually through `levels/levels.json`?
+- Should portals eventually support multiple pairs such as Portal A/B/C?
+- Should roller and mole obstacles be implemented next, and in which order?
 - When should `scripts/Main.gd` be split into smaller files?
 
 ## Recommended Next Development Phase
 
-The most practical next phase is **level authoring and editor workflow hardening**.
+The most practical next phase is **Special Tiles V2: roller or mole**.
 
 Suggested scope:
 
-- Use the editor to create and tune `level_003.json`, `level_004.json`, and `level_005.json`.
-- Add `Save As` if overwriting current levels feels risky.
-- Add level delete/reorder controls if needed.
-- Add a lightweight solvability check.
+- Add one new special-tile type at a time.
+- Recommended order:
+  - Roller: easier to author and test because it is deterministic.
+  - Mole: more complex because it moves after each placement and needs empty-cell rules.
+- Keep each obstacle saved in JSON and editable from the runtime editor.
+- Update the demo operator guide after each special tile is playable.
 
 Alternative next phases:
 
@@ -241,9 +262,10 @@ Manual Godot editor test:
 7. Press `D` and verify debug info scrolls.
 8. Press `E`, use the level selector to switch between configured levels.
 9. Change width, height, initial fuel, and cash value.
-10. Paint a small edit, confirm validation says `OK`, and click `Save Level`.
-11. Stop running and inspect the corresponding JSON file to confirm it changed.
-12. Use `New Level` and confirm the new JSON file appears under `levels/` and `levels/levels.json` includes it.
+10. Paint two `Portal A` cells, confirm validation says `OK`, and test that the powered route can continue from the paired portal.
+11. Paint a small edit, confirm validation says `OK`, and click `Save Level`.
+12. Stop running and inspect the corresponding JSON file to confirm it changed.
+13. Use `New Level` and confirm the new JSON file appears under `levels/` and `levels/levels.json` includes it.
 
 ## Phase Completion Rule
 

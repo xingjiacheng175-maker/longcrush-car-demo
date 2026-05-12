@@ -53,6 +53,9 @@ In the running demo:
 - Cash cells are collected when road is placed onto them or when they touch the powered road network.
 - Collected cash cells become road and can extend the connected road network.
 - Blocks are obstacles and cannot be covered by road.
+- Portal A is the current linked portal pair.
+- A level can contain either no portals or exactly two Portal A cells.
+- When the powered road network reaches one Portal A cell, the paired Portal A cell also becomes powered.
 - A road piece must connect to the powered road network to be placed.
 
 Hover preview:
@@ -74,6 +77,7 @@ The debug panel shows:
 - selected road piece,
 - cash count,
 - block count,
+- portal count,
 - powered cell count,
 - generated route cell count.
 
@@ -147,6 +151,7 @@ Brushes:
 - `Block`: paints an obstacle.
 - `Start`: moves the unique taxi start.
 - `Goal`: moves the unique destination.
+- `Portal A`: paints a linked portal cell.
 
 Click board cells to paint.
 
@@ -156,6 +161,8 @@ Notes:
 - Painting a new start removes the old start.
 - Painting a new goal removes the old goal.
 - Cash and blocks cannot overlap start or goal.
+- Portals cannot overlap start or goal.
+- Portal A must have exactly two cells to be valid.
 
 ## Validation
 
@@ -173,7 +180,8 @@ Common validation problems:
 - missing goal,
 - start and goal overlap,
 - start or goal is outside the board,
-- start/goal overlaps cash or blocks.
+- start/goal overlaps cash, blocks, or portals,
+- Portal A has only one cell or more than two cells.
 
 ## Save A Level
 
@@ -239,11 +247,12 @@ For team work, let one person maintain final level order.
 3. Place start and goal.
 4. Add blocks to shape the route.
 5. Add cash to reward detours.
-6. Save the level.
-7. Exit editor mode with `E`.
-8. Playtest the level.
-9. Adjust fuel, blocks, and cash.
-10. Save again.
+6. Add two Portal A cells only when the level needs a teleport connection.
+7. Save the level.
+8. Exit editor mode with `E`.
+9. Playtest the level.
+10. Adjust fuel, blocks, cash, and portals.
+11. Save again.
 
 Playtest goals:
 

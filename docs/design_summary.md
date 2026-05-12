@@ -1,6 +1,6 @@
 # Design Summary
 
-Last updated: 2026-04-28
+Last updated: 2026-05-12
 
 ## Source Materials
 
@@ -45,6 +45,7 @@ Player flow:
 - Walls/blocks are hard obstacles.
 - Road can be placed on reward cells.
 - Road cannot be placed on wall/block cells.
+- Portal A links two board cells; reaching one portal connects the paired portal into the powered road network.
 - User confirmed that detouring for money is the core experience.
 
 ## Fuel / Cash Rule
@@ -65,6 +66,17 @@ Current prototype treats reward value as fuel/cash gain in the same flow. Whethe
 - Road pieces cannot cover blocks.
 - Hover preview should show invalid placement in red when covering a block.
 - Auto-generated levels avoid placing blocks on the hidden generated route.
+
+## Special Tiles
+
+Current implemented special tile:
+
+- `Portal A`: a pair of linked cells. When one Portal A cell is connected to the powered road network, the paired Portal A cell becomes connected too.
+
+Current planned special tiles:
+
+- Roller: when paved, it turns the surrounding 3x3 area into road.
+- Mole: after each road placement, it moves to a random empty cell and blocks placement on that cell.
 
 ## Old Demo Logic Worth Preserving
 
