@@ -77,6 +77,7 @@ var score_label: Label
 var status_label: Label
 var message_label: Label
 var next_button: Button
+var level_jump_selector: OptionButton
 var debug_panel: PanelContainer
 var debug_label: Label
 var editor_panel: PanelContainer
@@ -227,6 +228,20 @@ func _build_ui() -> void:
 	reload_button.text = "Reload Level"
 	reload_button.pressed.connect(init_level)
 	side_panel.add_child(reload_button)
+
+	var jump_title := Label.new()
+	jump_title.text = "Jump To Level"
+	jump_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	side_panel.add_child(jump_title)
+
+	level_jump_selector = OptionButton.new()
+	level_jump_selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	side_panel.add_child(level_jump_selector)
+
+	var load_level_button := Button.new()
+	load_level_button.text = "Load Level"
+	load_level_button.pressed.connect(_on_load_selected_level_pressed)
+	side_panel.add_child(load_level_button)
 
 	next_button = Button.new()
 	next_button.text = "Next Generated Level"
@@ -1004,11 +1019,26 @@ func _refresh_hud() -> void:
 	score_label.text = "Cash $%d" % score
 	status_label.text = "Mode Editor" if editor_mode else "Status %s" % status.capitalize()
 	message_label.text = message
+	_refresh_level_jump_selector()
 	if next_button:
 		next_button.disabled = editor_mode or status != "won"
 		next_button.text = "Next Level" if status == "won" else "Next Level Locked"
 	_refresh_debug_panel()
 	_refresh_editor_panel()
+
+
+func _refresh_level_jump_selector() -> void:
+	if not level_jump_selector:
+		return
+	level_jump_selector.clear()
+	var entries := _get_level_selector_entries()
+	for i in range(entries.size()):
+		var entry: String = String(entries[i])
+		level_jump_selector.add_item(_format_level_selector_text(i, entry), i)
+
+	if entries.size() > 0:
+		var selected_index: int = clampi(current_level - 1, 0, entries.size() - 1)
+		level_jump_selector.select(selected_index)
 
 
 func _toggle_debug_panel() -> void:
@@ -1142,13 +1172,11 @@ func _refresh_editor_level_selector() -> void:
 
 	editor_refreshing_level_selector = true
 	editor_level_selector.clear()
-	var entries := level_sequence.duplicate()
-	if entries.is_empty():
-		entries.append(_get_level_entry(current_level))
+	var entries := _get_level_selector_entries()
 
 	for i in range(entries.size()):
 		var entry: String = String(entries[i])
-		editor_level_selector.add_item(_format_level_selector_text(i, entry))
+		editor_level_selector.add_item(_format_level_selector_text(i, entry), i)
 
 	var selected_index: int = clampi(current_level - 1, 0, max(entries.size() - 1, 0))
 	if entries.size() > 0:
@@ -1157,6 +1185,13 @@ func _refresh_editor_level_selector() -> void:
 
 	if editor_level_path_label:
 		editor_level_path_label.text = "Current: %s" % _current_editor_level_path_text()
+
+
+func _get_level_selector_entries() -> Array:
+	var entries := level_sequence.duplicate()
+	if entries.is_empty():
+		entries.append(_get_level_entry(current_level))
+	return entries
 
 
 func _format_level_selector_text(index: int, entry: String) -> String:
@@ -1184,6 +1219,20 @@ func _on_editor_level_selected(index: int) -> void:
 	if editor_mode:
 		message = "Editing level %d." % current_level
 		_refresh_all()
+
+
+func _on_load_selected_level_pressed() -> void:
+	if not level_jump_selector:
+		return
+	var selected_index: int = level_jump_selector.get_selected_id()
+	if selected_index < 0:
+		return
+	current_level = selected_index + 1
+	selected_shape_index = -1
+	hover_origin = Vector2i(-1, -1)
+	init_level()
+	message = "Jumped to level %d." % current_level
+	_refresh_all()
 
 
 func _copy_editor_json_to_clipboard() -> void:

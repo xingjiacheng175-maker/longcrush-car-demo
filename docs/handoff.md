@@ -1,6 +1,6 @@
 # Handoff
 
-Last updated: 2026-04-28
+Last updated: 2026-05-12
 
 ## Purpose
 
@@ -35,6 +35,7 @@ The user works across a home Windows machine and a company Mac. Keep this file a
 - In editor mode, use `Save Level` to write the current edit back to the current JSON level file.
 - `Restart Level`: restart current level.
 - `Reload Level`: reload current level data.
+- `Jump To Level` selector + `Load Level`: directly load a configured level entry.
 - `Next Level`: available after victory.
 
 ## Current Gameplay Notes

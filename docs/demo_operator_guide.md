@@ -1,6 +1,6 @@
 # Demo Operator Guide
 
-Last updated: 2026-04-28
+Last updated: 2026-05-12
 
 This guide is for designers opening the Godot demo to playtest or edit levels.
 
@@ -38,6 +38,7 @@ In the running demo:
 - Left click board: place selected road piece.
 - `Restart Level`: restart the current level from its loaded data.
 - `Reload Level`: reload the current level file or generated fallback.
+- `Jump To Level` selector + `Load Level`: directly load a configured level.
 - `Next Level`: appears after winning.
 - `D`: show or hide debug info.
 - `E`: enter or exit editor mode.

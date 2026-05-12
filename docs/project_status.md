@@ -1,6 +1,6 @@
 # Project Status
 
-Last updated: 2026-04-28
+Last updated: 2026-05-12
 
 ## Current Phase
 
@@ -51,6 +51,7 @@ Current focus is Level Editor V3 validation and handoff. The editor now supports
 - Loss condition: fuel reaches `0` before connecting to goal.
 - Restart level.
 - Next level after winning.
+- Jump-to-level selector and `Load Level` button for direct level loading during playtests.
 
 ### Reward / Cash Rule
 
