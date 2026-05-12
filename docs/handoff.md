@@ -10,32 +10,29 @@ The user works across a home Windows machine and a company Mac. Keep this file a
 
 ## Latest Completed Phase
 
-Special Tiles V2: Roller.
+Obstacle UI Asset Pass: Portal and Roller.
 
 Files changed in this phase:
 
+- `assets/placeholders/portal.png`
+- `assets/placeholders/roller.png`
 - `scripts/Main.gd`
 - `docs/project_status.md`
 - `docs/handoff.md`
-- `docs/design_summary.md`
-- `docs/demo_operator_guide.md`
-- `docs/demo_operator_guide_zh.md`
 
 What works now:
 
-- Runtime editor has a `Roller` brush.
-- JSON levels support optional `rollers` entries.
-- When a road piece covers a roller, the surrounding 3x3 editable area becomes road.
-- Roller paving leaves start, goal, blocks, and portals intact.
+- Portal and roller cells render with custom 256x256 placeholder art.
+- Portal and roller gameplay behavior is unchanged.
 
 How to test:
 
 - Run `scenes/Main.tscn` with Godot editor `F6`.
-- Press `E`, paint a `Roller`, exit editor mode, cover it with a road piece, and verify the 3x3 road expansion.
+- Press `E`, paint `Portal A` and `Roller` cells, and confirm the new art appears on the board.
+- Exit editor mode and verify Portal A and Roller gameplay behavior still works.
 
 Known issues:
 
-- Roller V1 does not chain-activate other rollers inside its 3x3 effect.
 - Godot CLI is not assumed to be available; use editor `F6` for final runtime testing.
 
 Recommended next step:

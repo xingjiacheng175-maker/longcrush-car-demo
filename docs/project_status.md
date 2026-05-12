@@ -10,34 +10,31 @@ Current focus is special-tile gameplay. Portal and roller special tiles can be a
 
 ## Latest Completed Phase
 
-Special Tiles V2: Roller.
+Obstacle UI Asset Pass: Portal and Roller.
 
 Files changed in this phase:
 
+- `assets/placeholders/portal.png`
+- `assets/placeholders/roller.png`
 - `scripts/Main.gd`
 - `docs/project_status.md`
 - `docs/handoff.md`
-- `docs/design_summary.md`
-- `docs/demo_operator_guide.md`
-- `docs/demo_operator_guide_zh.md`
 
 Current completed functionality:
 
-- Roller cells can be authored with the runtime editor.
-- Roller cells are saved and loaded through the optional JSON `rollers` array.
-- Paving over a roller turns the surrounding 3x3 editable area into road.
-- Roller paving leaves start, goal, blocks, and portals intact.
-- Debug info shows roller count.
+- Generated and added custom 256x256 placeholder UI art for Portal A and Roller.
+- Portal cells now render with `portal.png` instead of the temporary text marker.
+- Roller cells now render with `roller.png` instead of the temporary text marker.
+- Portal and roller gameplay behavior is unchanged.
 
 Current run/test method:
 
 - Open the Godot project and run `scenes/Main.tscn` with `F6`.
-- Press `E`, paint a `Roller`, exit editor mode, then cover the roller with a road piece.
-- Confirm the surrounding 3x3 editable cells become road and protected cells are not overwritten.
+- Press `E`, paint `Portal A` and `Roller` cells, and confirm the new art appears on the board.
+- Exit editor mode and verify Portal A and Roller gameplay behavior still works.
 
 Current known issues:
 
-- Roller V1 does not chain-activate other rollers inside its 3x3 effect.
 - Godot CLI is still unavailable in the Codex environment, so final runtime validation should be done with Godot editor `F6`.
 
 If opening a new Codex session, read:
@@ -113,12 +110,14 @@ If opening a new Codex session, read:
 - When the powered road network reaches one Portal A cell, the paired Portal A cell is treated as connected.
 - Roads can then continue from the paired portal side.
 - Portal cells are saved to and loaded from JSON through the optional `portals` array.
+- Portal cells render with custom placeholder art.
 - Roller V1 is implemented.
 - The editor supports a `Roller` brush.
 - When a road piece covers a roller, the roller turns the surrounding 3x3 area into road.
 - Roller paving affects empty cells, cash cells, roads, and other roller cells.
 - Roller paving does not overwrite start, goal, blocks, or portals.
 - Roller cells are saved to and loaded from JSON through the optional `rollers` array.
+- Roller cells render with custom placeholder art.
 
 ### Level Loading
 
@@ -170,6 +169,8 @@ Stylized top-down placeholder assets were generated and added under `assets/plac
 - `cash_road.png`
 - `cash_collected.png`
 - `block.png`
+- `portal.png`
+- `roller.png`
 
 Road-related placeholder art was simplified into direction-neutral asphalt blocks so the prototype does not need separate straight/corner road art yet.
 
