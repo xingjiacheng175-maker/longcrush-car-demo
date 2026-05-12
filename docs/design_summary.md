@@ -46,6 +46,7 @@ Player flow:
 - Road can be placed on reward cells.
 - Road cannot be placed on wall/block cells.
 - Portal A links two board cells; reaching one portal connects the paired portal into the powered road network.
+- Roller turns the surrounding 3x3 editable area into road when paved over.
 - User confirmed that detouring for money is the core experience.
 
 ## Fuel / Cash Rule
@@ -69,13 +70,13 @@ Current prototype treats reward value as fuel/cash gain in the same flow. Whethe
 
 ## Special Tiles
 
-Current implemented special tile:
+Current implemented special tiles:
 
 - `Portal A`: a pair of linked cells. When one Portal A cell is connected to the powered road network, the paired Portal A cell becomes connected too.
+- `Roller`: when paved over, it turns the surrounding 3x3 area into road. It affects empty cells, cash cells, roads, and other roller cells, but does not overwrite start, goal, blocks, or portals.
 
 Current planned special tiles:
 
-- Roller: when paved, it turns the surrounding 3x3 area into road.
 - Mole: after each road placement, it moves to a random empty cell and blocks placement on that cell.
 
 ## Old Demo Logic Worth Preserving

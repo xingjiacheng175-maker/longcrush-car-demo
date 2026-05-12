@@ -8,6 +8,40 @@ This file is for switching between devices or starting a new Codex session witho
 
 The user works across a home Windows machine and a company Mac. Keep this file and `docs/project_status.md` updated after every completed phase.
 
+## Latest Completed Phase
+
+Special Tiles V2: Roller.
+
+Files changed in this phase:
+
+- `scripts/Main.gd`
+- `docs/project_status.md`
+- `docs/handoff.md`
+- `docs/design_summary.md`
+- `docs/demo_operator_guide.md`
+- `docs/demo_operator_guide_zh.md`
+
+What works now:
+
+- Runtime editor has a `Roller` brush.
+- JSON levels support optional `rollers` entries.
+- When a road piece covers a roller, the surrounding 3x3 editable area becomes road.
+- Roller paving leaves start, goal, blocks, and portals intact.
+
+How to test:
+
+- Run `scenes/Main.tscn` with Godot editor `F6`.
+- Press `E`, paint a `Roller`, exit editor mode, cover it with a road piece, and verify the 3x3 road expansion.
+
+Known issues:
+
+- Roller V1 does not chain-activate other rollers inside its 3x3 effect.
+- Godot CLI is not assumed to be available; use editor `F6` for final runtime testing.
+
+Recommended next step:
+
+- Implement the mole special tile after confirming roller behavior in Godot.
+
 ## New Device / New Session Checklist
 
 1. Clone or open the GitHub repository:
@@ -34,6 +68,7 @@ The user works across a home Windows machine and a company Mac. Keep this file a
 - In editor mode, use `New Level` to create the next missing JSON level file.
 - In editor mode, use `Save Level` to write the current edit back to the current JSON level file.
 - In editor mode, use `Portal A` to paint exactly two linked portal cells.
+- In editor mode, use `Roller` to paint any number of roller cells.
 - `Restart Level`: restart current level.
 - `Reload Level`: reload current level data.
 - `Jump To Level` selector + `Load Level`: directly load a configured level entry.
@@ -44,6 +79,8 @@ The user works across a home Windows machine and a company Mac. Keep this file a
 - Cash/fuel rewards are collected when paved over or when adjacent to the powered road network.
 - Collected reward cells become road cells and can extend the powered network.
 - Portal A cells are linked. When the powered road network reaches one Portal A cell, the paired Portal A cell also becomes powered.
+- Roller cells trigger when paved over, turning the surrounding 3x3 editable area into road.
+- Roller paving does not overwrite start, goal, blocks, or portals.
 - Road-piece offers draw from small connector pieces plus the seven tetromino families.
 - A single offer avoids duplicate shapes that are equivalent by rotation.
 
@@ -58,10 +95,11 @@ Current entries:
 1. `res://levels/level_001.json`
 2. `res://levels/level_002.json`
 3. `res://levels/level_003.json`
-4. `generated`
+4. `res://levels/level_004.json`
 5. `generated`
+6. `generated`
 
-There are currently 2 hand-authored JSON level files unless `level_003.json` has already been created with the editor. Missing JSON entries fall back to generated content until saved.
+Hand-authored JSON files currently exist through `level_004.json`. Missing JSON entries fall back to generated content until saved.
 
 ## How To Configure 5 Levels Later
 
@@ -124,6 +162,9 @@ Example:
   "portals": [
     { "x": 1, "y": 4, "pair": "A" },
     { "x": 4, "y": 1, "pair": "A" }
+  ],
+  "rollers": [
+    { "x": 3, "y": 3 }
   ]
 }
 ```
@@ -138,9 +179,11 @@ Example:
 - Initial fuel can be changed from 1 to 20.
 - Current cash brush value can be changed from 1 to 9.
 - The `Portal A` brush paints linked portal cells. Use exactly two Portal A cells, or no portals.
+- The `Roller` brush paints any number of roller cells.
 - Resizing preserves in-bounds cash and blocks, clamps start/goal inside the board, and resets temporary play state.
 - JSON level loading and export support independent `width` and `height` values.
 - JSON level loading and export support optional `portals` data.
+- JSON level loading and export support optional `rollers` data.
 - Validation is shown in the editor panel before export.
 - `Copy JSON` copies the current board JSON if validation passes.
 - `Copy levels.json Entry` copies the suggested quoted level path for `levels/levels.json`.
@@ -149,13 +192,14 @@ Example:
 
 ## Recommended Next Phase
 
-Recommended next phase: **Special Tiles V2: roller or mole**.
+Recommended next phase: **Special Tiles V3: mole**.
 
 Before coding, tell the user:
 
 - Plan:
-  - add one special tile at a time,
-  - recommended order is roller first, then mole,
+  - add the mole as a moving blocking tile,
+  - move moles after each successful road placement,
+  - restrict mole movement to empty cells,
   - keep the tile editable in the runtime editor,
   - save and load it through JSON.
 - File modification scope:
@@ -166,9 +210,9 @@ Before coding, tell the user:
 - Testing method:
   - run F6 in Godot,
   - enter editor with `E`,
-  - paint the new special tile,
+  - paint the mole tile,
   - save and reload a test level,
-  - verify play-mode behavior.
+  - verify it blocks placement and moves after road placement.
 
 Wait for user confirmation before modifying files.
 

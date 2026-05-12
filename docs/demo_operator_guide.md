@@ -56,6 +56,9 @@ In the running demo:
 - Portal A is the current linked portal pair.
 - A level can contain either no portals or exactly two Portal A cells.
 - When the powered road network reaches one Portal A cell, the paired Portal A cell also becomes powered.
+- Roller cells trigger when paved over.
+- A triggered roller turns the surrounding 3x3 editable area into road.
+- Roller paving does not overwrite start, goal, blocks, or portals.
 - A road piece must connect to the powered road network to be placed.
 
 Hover preview:
@@ -78,6 +81,7 @@ The debug panel shows:
 - cash count,
 - block count,
 - portal count,
+- roller count,
 - powered cell count,
 - generated route cell count.
 
@@ -152,6 +156,7 @@ Brushes:
 - `Start`: moves the unique taxi start.
 - `Goal`: moves the unique destination.
 - `Portal A`: paints a linked portal cell.
+- `Roller`: paints a roller cell.
 
 Click board cells to paint.
 
@@ -162,6 +167,7 @@ Notes:
 - Painting a new goal removes the old goal.
 - Cash and blocks cannot overlap start or goal.
 - Portals cannot overlap start or goal.
+- Rollers cannot overlap start or goal.
 - Portal A must have exactly two cells to be valid.
 
 ## Validation
@@ -180,7 +186,7 @@ Common validation problems:
 - missing goal,
 - start and goal overlap,
 - start or goal is outside the board,
-- start/goal overlaps cash, blocks, or portals,
+- start/goal overlaps cash, blocks, portals, or rollers,
 - Portal A has only one cell or more than two cells.
 
 ## Save A Level
@@ -248,11 +254,12 @@ For team work, let one person maintain final level order.
 4. Add blocks to shape the route.
 5. Add cash to reward detours.
 6. Add two Portal A cells only when the level needs a teleport connection.
-7. Save the level.
-8. Exit editor mode with `E`.
-9. Playtest the level.
-10. Adjust fuel, blocks, cash, and portals.
-11. Save again.
+7. Add rollers when the level needs a 3x3 road expansion trigger.
+8. Save the level.
+9. Exit editor mode with `E`.
+10. Playtest the level.
+11. Adjust fuel, blocks, cash, portals, and rollers.
+12. Save again.
 
 Playtest goals:
 
