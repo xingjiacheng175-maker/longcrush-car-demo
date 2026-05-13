@@ -48,6 +48,7 @@ This module covers the player-facing road-building rules:
 - After victory, the previewed completion cash is added to total `Cash`.
 - After victory, a victory panel shows road cells, level cash, and total cash.
 - The victory panel offers `Next Level`, `Restart`, and `Close`.
+- The victory panel and its buttons use custom PNG UI assets under `assets/placeholders/`.
 
 ## Code Touch Points
 

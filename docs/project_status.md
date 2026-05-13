@@ -10,33 +10,36 @@ Current focus is gameplay tuning on top of the playable prototype. The code is s
 
 ## Latest Completed Phase
 
-Victory Panel V1.
+Victory Panel Art Integration.
 
 Files changed in this phase:
 
 - `docs/modules/gameplay.md`
+- `docs/modules/assets.md`
 - `docs/development/manual_test_checklist.md`
 - `docs/demo_operator_guide.md`
 - `docs/demo_operator_guide_zh.md`
 - `docs/project_status.md`
 - `docs/handoff.md`
+- `assets/placeholders/victory_panel.png`
+- `assets/placeholders/victory_button_normal.png`
+- `assets/placeholders/victory_button_pressed.png`
 - `scripts/Main.gd`
 
 Current completed functionality:
 
-- Added a victory panel that appears when the player connects to the goal.
-- The panel shows road cell count, level cash, and total cash.
-- The panel has `Next Level`, `Restart`, and `Close` buttons.
-- The side-panel `Next Level` button remains as a fallback control.
-- Restarting or loading the next level hides the victory panel.
-- Updated gameplay docs, operator guides, and manual test checklist.
+- Generated and added custom victory UI PNG assets.
+- The victory panel now uses `victory_panel.png` as its UI background.
+- The victory panel buttons now use `victory_button_normal.png` and `victory_button_pressed.png`.
+- Button text and click logic remain driven by Godot controls.
+- Updated gameplay docs, assets docs, and handoff docs.
 
 Current run/test method:
 
 - Run `git diff --check`.
 - In Godot 4, open `scenes/Main.tscn`, press `F6`, complete a level, and confirm the victory panel appears.
-- Confirm the panel values match road count, level cash, and total cash.
-- Confirm `Close`, `Restart`, and `Next Level` work from the panel.
+- Confirm the panel and buttons use the new art assets.
+- Confirm panel text remains readable and `Close`, `Restart`, and `Next Level` still work.
 
 Current known issues:
 

@@ -120,6 +120,9 @@ func _load_tile_textures() -> void:
 		"portal": load("res://assets/placeholders/portal.png"),
 		"roller": load("res://assets/placeholders/roller.png"),
 		"mole": load("res://assets/placeholders/mole.png"),
+		"victory_panel": load("res://assets/placeholders/victory_panel.png"),
+		"victory_button_normal": load("res://assets/placeholders/victory_button_normal.png"),
+		"victory_button_pressed": load("res://assets/placeholders/victory_button_pressed.png"),
 	}
 
 
@@ -419,7 +422,8 @@ func _build_victory_panel() -> void:
 	victory_overlay.add_child(center)
 
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(_ui_size(360), 0)
+	panel.custom_minimum_size = Vector2(_ui_size(460), _ui_size(260))
+	panel.add_theme_stylebox_override("panel", _make_texture_style_box("victory_panel", Vector4(70, 60, 70, 70)))
 	center.add_child(panel)
 
 	var margin := MarginContainer.new()
@@ -452,20 +456,47 @@ func _build_victory_panel() -> void:
 	var next_level_button := Button.new()
 	next_level_button.text = "Next Level"
 	next_level_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_apply_victory_button_style(next_level_button)
 	next_level_button.pressed.connect(_on_victory_next_pressed)
 	button_row.add_child(next_level_button)
 
 	var restart_button := Button.new()
 	restart_button.text = "Restart"
 	restart_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_apply_victory_button_style(restart_button)
 	restart_button.pressed.connect(_on_victory_restart_pressed)
 	button_row.add_child(restart_button)
 
 	var close_button := Button.new()
 	close_button.text = "Close"
 	close_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_apply_victory_button_style(close_button)
 	close_button.pressed.connect(_hide_victory_panel)
 	button_row.add_child(close_button)
+
+
+func _make_texture_style_box(texture_key: String, margins: Vector4) -> StyleBoxTexture:
+	var style := StyleBoxTexture.new()
+	style.texture = tile_textures.get(texture_key)
+	style.texture_margin_left = margins.x
+	style.texture_margin_top = margins.y
+	style.texture_margin_right = margins.z
+	style.texture_margin_bottom = margins.w
+	return style
+
+
+func _apply_victory_button_style(button: Button) -> void:
+	button.custom_minimum_size = Vector2(0, _ui_size(46))
+	button.add_theme_font_size_override("font_size", _ui_size(14))
+	button.add_theme_color_override("font_color", Color(0.08, 0.12, 0.04))
+	button.add_theme_color_override("font_hover_color", Color(0.08, 0.12, 0.04))
+	button.add_theme_color_override("font_pressed_color", Color(0.04, 0.07, 0.03))
+	var normal := _make_texture_style_box("victory_button_normal", Vector4(48, 34, 48, 34))
+	var pressed := _make_texture_style_box("victory_button_pressed", Vector4(48, 34, 48, 34))
+	button.add_theme_stylebox_override("normal", normal)
+	button.add_theme_stylebox_override("hover", normal)
+	button.add_theme_stylebox_override("disabled", normal)
+	button.add_theme_stylebox_override("pressed", pressed)
 
 
 func _ui_size(value: int) -> int:

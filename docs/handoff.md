@@ -10,33 +10,36 @@ The user works across a home Windows machine and a company Mac. Keep this file a
 
 ## Latest Completed Phase
 
-Victory Panel V1.
+Victory Panel Art Integration.
 
 Files changed in this phase:
 
 - `docs/modules/gameplay.md`
+- `docs/modules/assets.md`
 - `docs/development/manual_test_checklist.md`
 - `docs/demo_operator_guide.md`
 - `docs/demo_operator_guide_zh.md`
 - `docs/project_status.md`
 - `docs/handoff.md`
+- `assets/placeholders/victory_panel.png`
+- `assets/placeholders/victory_button_normal.png`
+- `assets/placeholders/victory_button_pressed.png`
 - `scripts/Main.gd`
 
 What works now:
 
-- A victory panel appears when the player connects to the goal.
-- The panel shows road cell count, level cash, and total cash.
-- The panel has `Next Level`, `Restart`, and `Close` buttons.
-- The side-panel `Next Level` button remains as a fallback control.
-- Restarting or loading the next level hides the victory panel.
-- Gameplay docs, operator guides, and manual test checklist now describe the victory panel.
+- The victory panel uses a custom generated PNG background.
+- The victory panel buttons use custom generated normal and pressed PNG states.
+- Panel text and button labels remain Godot UI text.
+- The existing `Next Level`, `Restart`, and `Close` button logic is unchanged.
+- Gameplay docs, assets docs, and handoff docs now describe the victory UI assets.
 
 How to test:
 
 - Run `git diff --check`.
 - In Godot 4, open `scenes/Main.tscn`, press `F6`, complete a level, and confirm the victory panel appears.
-- Confirm the panel values match road count, level cash, and total cash.
-- Confirm `Close`, `Restart`, and `Next Level` work from the panel.
+- Confirm the panel and buttons use the new art assets.
+- Confirm panel text remains readable and `Close`, `Restart`, and `Next Level` still work.
 
 Known issues:
 
@@ -89,6 +92,7 @@ Recommended next step:
 - The goal tile does not count for victory cash.
 - During play, the top HUD previews the current completion cash as `Win +$N`.
 - Connecting to the goal opens a victory panel with road count, level cash, total cash, and action buttons.
+- Victory panel art assets are in `assets/placeholders/victory_panel.png`, `victory_button_normal.png`, and `victory_button_pressed.png`.
 - Portal A cells are linked. When the powered road network reaches one Portal A cell, the paired Portal A cell also becomes powered.
 - Roller cells trigger when paved over, turning the surrounding 3x3 editable area into road.
 - Roller paving does not overwrite start, goal, blocks, or portals.
