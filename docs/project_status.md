@@ -10,38 +10,30 @@ Current focus is special-tile gameplay. Portal, roller, and mole special tiles c
 
 ## Latest Completed Phase
 
-Special Tiles V3: Mole.
+Mole UI Art Integration.
 
 Files changed in this phase:
 
+- `assets/placeholders/mole.png`
 - `scripts/Main.gd`
 - `docs/project_status.md`
 - `docs/handoff.md`
-- `docs/design_summary.md`
-- `docs/demo_operator_guide.md`
-- `docs/demo_operator_guide_zh.md`
 
 Current completed functionality:
 
-- Mole cells can be authored with the runtime editor.
-- Mole cells are saved and loaded through the optional JSON `moles` array.
-- Road pieces cannot cover mole cells.
-- After each successful road placement, moles move to random empty cells.
-- Mole movement avoids start, goal, roads, cash, blocks, portals, rollers, and other mole cells.
-- Debug info shows mole count.
+- Added final 256x256 mole placeholder art from `2a.png`.
+- Mole cells now render with `mole.png` instead of the temporary `M` marker.
+- Mole gameplay behavior is unchanged.
 
 Current run/test method:
 
 - Open the Godot project and run `scenes/Main.tscn` with `F6`.
-- Press `E`, paint one or more `Mole` cells, then exit editor mode.
-- Confirm road pieces cannot be placed on mole cells.
-- Place a valid road piece and confirm moles move to empty cells.
-- Use `Copy JSON` or `Save Level` and confirm `moles` are included.
+- Press `E`, paint one or more `Mole` cells, and confirm the mole art appears.
+- Exit editor mode, confirm road pieces cannot be placed on mole cells, then place a valid road piece and confirm moles move.
 
 Current known issues:
 
 - Godot CLI is still unavailable in the Codex environment, so final runtime validation should be done with Godot editor `F6`.
-- Mole cells currently use a temporary `M` marker until final art is added.
 
 If opening a new Codex session, read:
 
@@ -130,7 +122,7 @@ If opening a new Codex session, read:
 - After each successful road placement, moles move to random empty cells.
 - Mole movement avoids start, goal, roads, cash, blocks, portals, rollers, and other mole cells.
 - Mole cells are saved to and loaded from JSON through the optional `moles` array.
-- Mole cells currently render as a temporary `M` marker.
+- Mole cells render with custom placeholder art.
 
 ### Level Loading
 
@@ -184,6 +176,7 @@ Stylized top-down placeholder assets were generated and added under `assets/plac
 - `block.png`
 - `portal.png`
 - `roller.png`
+- `mole.png`
 
 Road-related placeholder art was simplified into direction-neutral asphalt blocks so the prototype does not need separate straight/corner road art yet.
 
@@ -266,7 +259,6 @@ Road-related placeholder art was simplified into direction-neutral asphalt block
 - Special tiles currently only include one portal pair (`Portal A`).
 - Portal V1 does not yet support multiple named portal pairs.
 - Roller V1 does not chain-activate other rollers that are only affected by the 3x3 paving area.
-- Mole cells currently use temporary text art.
 - Placeholder art is good enough for a demo but not final art.
 - Cash value is mostly conveyed through tooltip/logic rather than polished UI.
 - Godot CLI was not available in the Codex environment, so runtime validation has relied on user F6 testing in the Godot editor.
@@ -298,19 +290,18 @@ Road-related placeholder art was simplified into direction-neutral asphalt block
 - Should level order be edited in-game, or manually through `levels/levels.json`?
 - Should portals eventually support multiple pairs such as Portal A/B/C?
 - Should rollers chain-activate other rollers inside their 3x3 effect, or remain single-trigger only?
-- What final art should replace the temporary Mole `M` marker?
+- Should final art continue using the current placeholder set, or move toward a unified production style?
 - When should `scripts/Main.gd` be split into smaller files?
 
 ## Recommended Next Development Phase
 
-The most practical next phase is **Mole UI Art Integration**.
+The most practical next phase is **level authoring with the three special tiles**.
 
 Suggested scope:
 
-- Add final `mole.png` art under `assets/placeholders/`.
-- Load the mole texture in `scripts/Main.gd`.
-- Replace the temporary `M` marker with the final mole tile art.
-- Verify mole gameplay behavior is unchanged.
+- Use Portal A, Roller, and Mole to create a few authored test levels.
+- Tune fuel values and cash placement around these special tiles.
+- Decide whether roller chain activation or multiple portal pairs are needed after playtesting.
 
 Alternative next phases:
 

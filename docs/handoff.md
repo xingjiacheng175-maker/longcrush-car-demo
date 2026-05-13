@@ -10,41 +10,33 @@ The user works across a home Windows machine and a company Mac. Keep this file a
 
 ## Latest Completed Phase
 
-Special Tiles V3: Mole.
+Mole UI Art Integration.
 
 Files changed in this phase:
 
+- `assets/placeholders/mole.png`
 - `scripts/Main.gd`
 - `docs/project_status.md`
 - `docs/handoff.md`
-- `docs/design_summary.md`
-- `docs/demo_operator_guide.md`
-- `docs/demo_operator_guide_zh.md`
 
 What works now:
 
-- Runtime editor has a `Mole` brush.
-- JSON levels support optional `moles` entries.
-- Road pieces cannot cover mole cells.
-- Moles move to random empty cells after each successful road placement.
-- Mole movement avoids start, goal, roads, cash, blocks, portals, rollers, and other moles.
+- Mole cells render with custom 256x256 placeholder art from `assets/placeholders/mole.png`.
+- Mole gameplay behavior is unchanged.
 
 How to test:
 
 - Run `scenes/Main.tscn` with Godot editor `F6`.
-- Press `E`, paint one or more `Mole` cells, then exit editor mode.
-- Confirm road pieces cannot cover mole cells.
-- Place a valid road piece and confirm moles move to empty cells.
-- Use `Copy JSON` or `Save Level` and confirm `moles` are included.
+- Press `E`, paint one or more `Mole` cells, and confirm the mole art appears.
+- Exit editor mode, confirm road pieces cannot cover mole cells, then place a valid road piece and confirm moles move.
 
 Known issues:
 
 - Godot CLI is not assumed to be available; use editor `F6` for final runtime testing.
-- Mole cells currently use a temporary `M` marker until final art is added.
 
 Recommended next step:
 
-- Add final mole tile art and replace the temporary `M` marker.
+- Author and playtest levels that use Portal A, Roller, and Mole together.
 
 ## New Device / New Session Checklist
 
@@ -203,26 +195,24 @@ Example:
 
 ## Recommended Next Phase
 
-Recommended next phase: **Mole UI Art Integration**.
+Recommended next phase: **level authoring with the three special tiles**.
 
 Before coding, tell the user:
 
 - Plan:
-  - add final `mole.png` art under `assets/placeholders/`,
-  - load the mole texture in `scripts/Main.gd`,
-  - replace the temporary `M` marker with final tile art,
-  - verify mole gameplay behavior is unchanged.
+  - create authored test levels using Portal A, Roller, and Mole,
+  - tune fuel and cash placement,
+  - identify whether roller chaining or multiple portal pairs are needed.
 - File modification scope:
-  - likely `scripts/Main.gd`,
-  - likely `assets/placeholders/mole.png`,
+  - likely `levels/*.json`,
   - possibly `docs/project_status.md`,
   - possibly `docs/handoff.md`.
 - Testing method:
   - run F6 in Godot,
   - enter editor with `E`,
-  - paint the mole tile,
-  - verify the final mole art appears,
-  - verify it still blocks placement and moves after road placement.
+  - create or edit a test level,
+  - save and reload it,
+  - verify the special-tile interactions during play.
 
 Wait for user confirmation before modifying files.
 

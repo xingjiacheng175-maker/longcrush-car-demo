@@ -116,6 +116,7 @@ func _load_tile_textures() -> void:
 		"block": load("res://assets/placeholders/block.png"),
 		"portal": load("res://assets/placeholders/portal.png"),
 		"roller": load("res://assets/placeholders/roller.png"),
+		"mole": load("res://assets/placeholders/mole.png"),
 	}
 
 
@@ -2031,9 +2032,8 @@ func _get_cell_pixel_size() -> int:
 func _apply_cell_button_visual(button: Button, x: int, y: int) -> void:
 	var preview_state: String = _get_preview_state(x, y)
 	var cell: Dictionary = grid[y][x]
-	var shows_mole: bool = preview_state == "" and String(cell["type"]) == CELL_MOLE
-	button.text = "M" if shows_mole else ""
-	button.icon = null if preview_state != "" or shows_mole else _cell_texture(cell)
+	button.text = ""
+	button.icon = null if preview_state != "" else _cell_texture(cell)
 	button.add_theme_font_size_override("font_size", _ui_size(18))
 	button.tooltip_text = "(%d, %d) %s" % [x, y, _cell_tooltip(cell)]
 	button.add_theme_stylebox_override("normal", _cell_style(cell, false, preview_state))
@@ -2062,7 +2062,7 @@ func _cell_texture(cell: Dictionary) -> Texture2D:
 	if cell_type == CELL_ROLLER:
 		return _get_tile_texture("roller")
 	if cell_type == CELL_MOLE:
-		return _get_tile_texture("ground")
+		return _get_tile_texture("mole")
 	return _get_tile_texture("ground")
 
 
