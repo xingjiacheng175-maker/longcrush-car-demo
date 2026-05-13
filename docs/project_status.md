@@ -1,41 +1,47 @@
 # Project Status
 
-Last updated: 2026-05-12
+Last updated: 2026-05-13
 
 ## Current Phase
 
 The Godot 4 prototype is playable and has the core MVP loop, JSON level loading, generated fallback levels, placeholder art, debug tools, and an improved in-game editor.
 
-Current focus is special-tile gameplay. Portal and roller special tiles can be authored in the runtime editor and saved in JSON.
+Current focus is special-tile gameplay. Portal, roller, and mole special tiles can be authored in the runtime editor and saved in JSON.
 
 ## Latest Completed Phase
 
-Obstacle UI Asset Pass: Portal and Roller.
+Special Tiles V3: Mole.
 
 Files changed in this phase:
 
-- `assets/placeholders/portal.png`
-- `assets/placeholders/roller.png`
 - `scripts/Main.gd`
 - `docs/project_status.md`
 - `docs/handoff.md`
+- `docs/design_summary.md`
+- `docs/demo_operator_guide.md`
+- `docs/demo_operator_guide_zh.md`
 
 Current completed functionality:
 
-- Generated and added custom 256x256 placeholder UI art for Portal A and Roller.
-- Portal cells now render with `portal.png` instead of the temporary text marker.
-- Roller cells now render with `roller.png` instead of the temporary text marker.
-- Portal and roller gameplay behavior is unchanged.
+- Mole cells can be authored with the runtime editor.
+- Mole cells are saved and loaded through the optional JSON `moles` array.
+- Road pieces cannot cover mole cells.
+- After each successful road placement, moles move to random empty cells.
+- Mole movement avoids start, goal, roads, cash, blocks, portals, rollers, and other mole cells.
+- Debug info shows mole count.
 
 Current run/test method:
 
 - Open the Godot project and run `scenes/Main.tscn` with `F6`.
-- Press `E`, paint `Portal A` and `Roller` cells, and confirm the new art appears on the board.
-- Exit editor mode and verify Portal A and Roller gameplay behavior still works.
+- Press `E`, paint one or more `Mole` cells, then exit editor mode.
+- Confirm road pieces cannot be placed on mole cells.
+- Place a valid road piece and confirm moles move to empty cells.
+- Use `Copy JSON` or `Save Level` and confirm `moles` are included.
 
 Current known issues:
 
 - Godot CLI is still unavailable in the Codex environment, so final runtime validation should be done with Godot editor `F6`.
+- Mole cells currently use a temporary `M` marker until final art is added.
 
 If opening a new Codex session, read:
 
@@ -118,6 +124,13 @@ If opening a new Codex session, read:
 - Roller paving does not overwrite start, goal, blocks, or portals.
 - Roller cells are saved to and loaded from JSON through the optional `rollers` array.
 - Roller cells render with custom placeholder art.
+- Mole V1 is implemented.
+- The editor supports a `Mole` brush.
+- Road pieces cannot cover mole cells.
+- After each successful road placement, moles move to random empty cells.
+- Mole movement avoids start, goal, roads, cash, blocks, portals, rollers, and other mole cells.
+- Mole cells are saved to and loaded from JSON through the optional `moles` array.
+- Mole cells currently render as a temporary `M` marker.
 
 ### Level Loading
 
@@ -191,6 +204,7 @@ Road-related placeholder art was simplified into direction-neutral asphalt block
   - block count,
   - portal count,
   - roller count,
+  - mole count,
   - powered cell count,
   - generated hidden route cell count.
 - Debug board overlays:
@@ -218,6 +232,7 @@ Road-related placeholder art was simplified into direction-neutral asphalt block
   - Goal
   - Portal A
   - Roller
+  - Mole
 - Click board cells to paint.
 - Start and goal are unique; placing one clears the previous one.
 - Cash default value is currently `2`, and newly painted cash uses the current cash brush value.
@@ -226,6 +241,7 @@ Road-related placeholder art was simplified into direction-neutral asphalt block
 - JSON level loading and export support independent `width` and `height` values.
 - JSON level loading and export support optional `portals` data.
 - JSON level loading and export support optional `rollers` data.
+- JSON level loading and export support optional `moles` data.
 - Selecting a level in the editor loads that level entry.
 - `New Level` creates the next missing `res://levels/level_%03d.json` file and adds it to `levels/levels.json` before generated entries.
 - `Save Level` writes the current edited board back to the current JSON level file and updates `levels/levels.json`.
@@ -233,7 +249,7 @@ Road-related placeholder art was simplified into direction-neutral asphalt block
   - exactly one start,
   - exactly one goal,
   - start and goal inside the board,
-  - start/goal not overlapping cash, blocks, portals, or rollers,
+  - start/goal not overlapping cash, blocks, portals, rollers, or moles,
   - Portal A must have exactly two cells, or none.
 - `Copy JSON` copies the current board JSON to the clipboard.
 - `Copy levels.json Entry` copies the suggested quoted `res://levels/level_%03d.json` entry for the current level.
@@ -250,7 +266,7 @@ Road-related placeholder art was simplified into direction-neutral asphalt block
 - Special tiles currently only include one portal pair (`Portal A`).
 - Portal V1 does not yet support multiple named portal pairs.
 - Roller V1 does not chain-activate other rollers that are only affected by the 3x3 paving area.
-- Mole obstacle type has not been implemented yet.
+- Mole cells currently use temporary text art.
 - Placeholder art is good enough for a demo but not final art.
 - Cash value is mostly conveyed through tooltip/logic rather than polished UI.
 - Godot CLI was not available in the Codex environment, so runtime validation has relied on user F6 testing in the Godot editor.
@@ -269,6 +285,7 @@ Road-related placeholder art was simplified into direction-neutral asphalt block
 - Walls/blocks are the primary path restriction.
 - Portal A links two board cells; connecting one portal to the powered road network also powers the paired portal.
 - Roller turns nearby editable cells into road when paved over.
+- Mole blocks road placement and moves to a random empty cell after each successful road placement.
 - Generated levels may remain until the core gameplay and editor flow are stable.
 - Collaboration docs should be kept in GitHub for switching between home Windows and company Mac.
 
@@ -281,20 +298,19 @@ Road-related placeholder art was simplified into direction-neutral asphalt block
 - Should level order be edited in-game, or manually through `levels/levels.json`?
 - Should portals eventually support multiple pairs such as Portal A/B/C?
 - Should rollers chain-activate other rollers inside their 3x3 effect, or remain single-trigger only?
-- Should mole obstacle be implemented next?
+- What final art should replace the temporary Mole `M` marker?
 - When should `scripts/Main.gd` be split into smaller files?
 
 ## Recommended Next Development Phase
 
-The most practical next phase is **Special Tiles V3: mole**.
+The most practical next phase is **Mole UI Art Integration**.
 
 Suggested scope:
 
-- Add the mole as a moving blocking tile.
-- Move moles after each successful road placement.
-- Restrict mole movement to empty cells with no cash, block, portal, roller, start, or goal.
-- Save and load moles through JSON and expose them in the runtime editor.
-- Update the demo operator guide after the mole is playable.
+- Add final `mole.png` art under `assets/placeholders/`.
+- Load the mole texture in `scripts/Main.gd`.
+- Replace the temporary `M` marker with the final mole tile art.
+- Verify mole gameplay behavior is unchanged.
 
 Alternative next phases:
 
@@ -317,9 +333,10 @@ Manual Godot editor test:
 10. Paint two `Portal A` cells, confirm validation says `OK`, and test that the powered route can continue from the paired portal.
 11. Paint a `Roller`, cover it with a road piece, and confirm the surrounding 3x3 editable cells become road.
 12. Confirm roller paving does not overwrite start, goal, blocks, or portals.
-13. Paint a small edit, confirm validation says `OK`, and click `Save Level`.
-14. Stop running and inspect the corresponding JSON file to confirm it changed.
-15. Use `New Level` and confirm the new JSON file appears under `levels/` and `levels/levels.json` includes it.
+13. Paint one or more `Mole` cells, confirm road pieces cannot cover them, then place a valid road piece and confirm moles move to empty cells.
+14. Paint a small edit, confirm validation says `OK`, and click `Save Level`.
+15. Stop running and inspect the corresponding JSON file to confirm it changed.
+16. Use `New Level` and confirm the new JSON file appears under `levels/` and `levels/levels.json` includes it.
 
 ## Phase Completion Rule
 

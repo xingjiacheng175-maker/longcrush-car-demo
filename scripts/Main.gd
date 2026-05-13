@@ -8,6 +8,7 @@ const CELL_FUEL := "fuel"
 const CELL_ROCK := "rock"
 const CELL_PORTAL := "portal"
 const CELL_ROLLER := "roller"
+const CELL_MOLE := "mole"
 const PORTAL_PAIR_A := "A"
 
 const INITIAL_FUEL := 3
@@ -368,6 +369,11 @@ func _build_ui() -> void:
 	brush_row_2.add_child(_make_editor_brush_button("Portal A", CELL_PORTAL))
 	brush_row_2.add_child(_make_editor_brush_button("Roller", CELL_ROLLER))
 
+	var brush_row_3 := HBoxContainer.new()
+	brush_row_3.add_theme_constant_override("separation", _ui_size(4))
+	editor_box.add_child(brush_row_3)
+	brush_row_3.add_child(_make_editor_brush_button("Mole", CELL_MOLE))
+
 	var copy_json_button := Button.new()
 	copy_json_button.text = "Copy JSON"
 	copy_json_button.pressed.connect(_copy_editor_json_to_clipboard)
@@ -543,6 +549,14 @@ func _load_level_from_path(path: String) -> bool:
 		if _is_in_bounds(portal_point.x, portal_point.y) and grid[portal_point.y][portal_point.x]["type"] == CELL_EMPTY:
 			_set_portal(portal_point.x, portal_point.y, String(portal_data.get("pair", PORTAL_PAIR_A)))
 
+	for mole_entry in level_data.get("moles", []):
+		if not mole_entry is Dictionary:
+			continue
+		var mole_data: Dictionary = mole_entry
+		var mole_point := _point_from_dict(mole_data)
+		if _is_in_bounds(mole_point.x, mole_point.y) and grid[mole_point.y][mole_point.x]["type"] == CELL_EMPTY:
+			_set_mole(mole_point.x, mole_point.y)
+
 	message = "Loaded %s from JSON: %dx%d, fuel %d." % [
 		String(level_data.get("name", path)),
 		grid_width,
@@ -576,6 +590,8 @@ func _validate_level_data(level_data: Dictionary, path: String) -> bool:
 	if not _validate_level_rollers(level_data, width, height, json_start, json_goal, path):
 		return false
 	if not _validate_level_portals(level_data, width, height, json_start, json_goal, path):
+		return false
+	if not _validate_level_moles(level_data, width, height, json_start, json_goal, path):
 		return false
 	return true
 
@@ -617,6 +633,49 @@ func _validate_level_rollers(level_data: Dictionary, width: int, height: int, js
 			push_warning("Level JSON has duplicate roller cells: %s" % path)
 			return false
 		seen[roller_point] = true
+	return true
+
+
+func _validate_level_moles(level_data: Dictionary, width: int, height: int, json_start: Vector2i, json_goal: Vector2i, path: String) -> bool:
+	var moles = level_data.get("moles", [])
+	if not moles is Array:
+		push_warning("Level JSON moles must be an array: %s" % path)
+		return false
+
+	var blocked_points: Dictionary = {}
+	for cash_entry in level_data.get("cash", []):
+		if cash_entry is Dictionary:
+			blocked_points[_point_from_dict(cash_entry)] = "cash"
+	for block_entry in level_data.get("blocks", []):
+		if block_entry is Dictionary:
+			blocked_points[_point_from_dict(block_entry)] = "block"
+	for roller_entry in level_data.get("rollers", []):
+		if roller_entry is Dictionary:
+			blocked_points[_point_from_dict(roller_entry)] = "roller"
+	for portal_entry in level_data.get("portals", []):
+		if portal_entry is Dictionary:
+			blocked_points[_point_from_dict(portal_entry)] = "portal"
+
+	var seen: Dictionary = {}
+	for mole_entry in moles:
+		if not mole_entry is Dictionary:
+			push_warning("Level JSON mole entry is invalid: %s" % path)
+			return false
+		var mole_data: Dictionary = mole_entry
+		var mole_point := _point_from_dict(mole_data)
+		if not _is_point_in_bounds(mole_point, width, height):
+			push_warning("Level JSON mole is out of bounds: %s" % path)
+			return false
+		if mole_point == json_start or mole_point == json_goal:
+			push_warning("Level JSON mole overlaps start or goal: %s" % path)
+			return false
+		if blocked_points.has(mole_point):
+			push_warning("Level JSON mole overlaps cash, block, portal, or roller: %s" % path)
+			return false
+		if seen.has(mole_point):
+			push_warning("Level JSON has duplicate mole cells: %s" % path)
+			return false
+		seen[mole_point] = true
 	return true
 
 
@@ -776,6 +835,15 @@ func _set_portal(x: int, y: int, pair: String = PORTAL_PAIR_A) -> void:
 
 func _set_roller(x: int, y: int) -> void:
 	grid[y][x]["type"] = CELL_ROLLER
+	grid[y][x]["portal_pair"] = ""
+	grid[y][x]["fuel_value"] = 0
+	grid[y][x]["consumed"] = false
+	grid[y][x]["has_road"] = false
+	grid[y][x]["collected_fuel"] = false
+
+
+func _set_mole(x: int, y: int) -> void:
+	grid[y][x]["type"] = CELL_MOLE
 	grid[y][x]["portal_pair"] = ""
 	grid[y][x]["fuel_value"] = 0
 	grid[y][x]["consumed"] = false
@@ -989,7 +1057,7 @@ func _on_cell_pressed(x: int, y: int) -> void:
 
 	var shape: Dictionary = current_shapes[selected_shape_index]
 	if not _is_placement_valid(shape, Vector2i(x, y)):
-		message = "Invalid placement. Extend from powered road and avoid blocks and the destination."
+		message = "Invalid placement. Extend from powered road and avoid blocks, moles, and the destination."
 		_refresh_hud()
 		return
 
@@ -1029,6 +1097,10 @@ func _on_cell_pressed(x: int, y: int) -> void:
 		message = "Road extended. Keep the taxi moving."
 
 	_update_powered_status()
+	var moved_moles := _move_moles_after_placement()
+	if moved_moles > 0:
+		message += " Moles shifted."
+	_update_powered_status()
 	if bool(grid[goal_pos.y][goal_pos.x]["powered"]):
 		status = "won"
 		selected_shape_index = -1
@@ -1060,7 +1132,7 @@ func _is_placement_valid(shape: Dictionary, origin: Vector2i) -> bool:
 
 		var cell: Dictionary = grid[y][x]
 		var cell_type := String(cell["type"])
-		if cell_type == CELL_ROCK or cell_type == CELL_END:
+		if cell_type == CELL_ROCK or cell_type == CELL_END or cell_type == CELL_MOLE:
 			return false
 		if cell_type == CELL_EMPTY or (cell_type == CELL_FUEL and not bool(cell["has_road"])) or (cell_type == CELL_PORTAL and not bool(cell["has_road"])) or cell_type == CELL_ROLLER:
 			adds_new_road = true
@@ -1169,6 +1241,52 @@ func _activate_roller(origin: Vector2i) -> int:
 
 func _can_roller_pave(cell_type: String) -> bool:
 	return cell_type == CELL_EMPTY or cell_type == CELL_PATH or cell_type == CELL_FUEL or cell_type == CELL_ROLLER
+
+
+func _move_moles_after_placement() -> int:
+	var mole_positions := _get_mole_cells()
+	if mole_positions.is_empty():
+		return 0
+
+	var reserved_originals: Dictionary = {}
+	for mole_pos in mole_positions:
+		reserved_originals[mole_pos] = true
+	for mole_pos in mole_positions:
+		_clear_cell(mole_pos.x, mole_pos.y)
+
+	var moved := 0
+	var occupied_targets: Dictionary = {}
+	for mole_pos in mole_positions:
+		var targets := _get_mole_move_targets(reserved_originals, occupied_targets)
+		var target := mole_pos
+		if not targets.is_empty():
+			target = targets[rng.randi_range(0, targets.size() - 1)]
+			if target != mole_pos:
+				moved += 1
+		_set_mole(target.x, target.y)
+		occupied_targets[target] = true
+	return moved
+
+
+func _get_mole_cells() -> Array[Vector2i]:
+	var moles: Array[Vector2i] = []
+	for y in range(grid_height):
+		for x in range(grid_width):
+			if String(grid[y][x]["type"]) == CELL_MOLE:
+				moles.append(Vector2i(x, y))
+	return moles
+
+
+func _get_mole_move_targets(reserved_originals: Dictionary, occupied_targets: Dictionary) -> Array[Vector2i]:
+	var targets: Array[Vector2i] = []
+	for y in range(grid_height):
+		for x in range(grid_width):
+			var target := Vector2i(x, y)
+			if reserved_originals.has(target) or occupied_targets.has(target):
+				continue
+			if String(grid[y][x]["type"]) == CELL_EMPTY:
+				targets.append(target)
+	return targets
 
 
 func _harvest_connected_fuel() -> int:
@@ -1347,6 +1465,8 @@ func _resize_editor_grid(new_width: int, new_height: int) -> void:
 				_set_portal(x, y, String(old_cell.get("portal_pair", PORTAL_PAIR_A)))
 			elif old_type == CELL_ROLLER:
 				_set_roller(x, y)
+			elif old_type == CELL_MOLE:
+				_set_mole(x, y)
 
 	start_pos = _clamp_point_to_grid(old_start)
 	goal_pos = _clamp_point_to_grid(old_goal)
@@ -1633,8 +1753,8 @@ func _validate_current_editor_level() -> Dictionary:
 				start_count += 1
 			elif cell_type == CELL_END:
 				goal_count += 1
-			if (cell_type == CELL_FUEL or cell_type == CELL_ROCK or cell_type == CELL_PORTAL or cell_type == CELL_ROLLER) and (point == start_pos or point == goal_pos):
-				errors.append("Start/goal cannot overlap cash, blocks, portals, or rollers.")
+			if (cell_type == CELL_FUEL or cell_type == CELL_ROCK or cell_type == CELL_PORTAL or cell_type == CELL_ROLLER or cell_type == CELL_MOLE) and (point == start_pos or point == goal_pos):
+				errors.append("Start/goal cannot overlap cash, blocks, portals, rollers, or moles.")
 
 	if start_count != 1:
 		errors.append("Level must contain exactly one start.")
@@ -1680,6 +1800,7 @@ func _refresh_debug_panel() -> void:
 		"Blocks: %d" % int(stats["blocks"]),
 		"Portals: %d" % int(stats["portals"]),
 		"Rollers: %d" % int(stats["rollers"]),
+		"Moles: %d" % int(stats["moles"]),
 		"Powered: %d" % int(stats["powered"]),
 		"Route cells: %d" % generated_route_cells.size(),
 	])
@@ -1692,6 +1813,7 @@ func _collect_level_stats() -> Dictionary:
 		"blocks": 0,
 		"portals": 0,
 		"rollers": 0,
+		"moles": 0,
 		"powered": 0,
 	}
 	for row in grid:
@@ -1710,6 +1832,8 @@ func _collect_level_stats() -> Dictionary:
 				stats["portals"] += 1
 			elif cell_type == CELL_ROLLER:
 				stats["rollers"] += 1
+			elif cell_type == CELL_MOLE:
+				stats["moles"] += 1
 			if bool(cell["powered"]):
 				stats["powered"] += 1
 	return stats
@@ -1754,6 +1878,8 @@ func _paint_editor_cell(x: int, y: int) -> void:
 			_set_portal(x, y, PORTAL_PAIR_A)
 		elif editor_brush == CELL_ROLLER:
 			_set_roller(x, y)
+		elif editor_brush == CELL_MOLE:
+			_set_mole(x, y)
 		else:
 			grid[y][x]["type"] = CELL_EMPTY
 
@@ -1801,6 +1927,11 @@ func _reset_play_state_after_edit() -> void:
 				cell["consumed"] = false
 				cell["has_road"] = false
 				cell["collected_fuel"] = false
+			elif String(cell["type"]) == CELL_MOLE:
+				cell["powered"] = false
+				cell["consumed"] = false
+				cell["has_road"] = false
+				cell["collected_fuel"] = false
 			else:
 				cell["powered"] = false
 	grid[start_pos.y][start_pos.x]["type"] = CELL_START
@@ -1821,6 +1952,7 @@ func _build_current_level_json_text() -> String:
 		"blocks": [],
 		"portals": [],
 		"rollers": [],
+		"moles": [],
 	}
 
 	for y in range(grid_height):
@@ -1846,6 +1978,11 @@ func _build_current_level_json_text() -> String:
 				})
 			elif cell_type == CELL_ROLLER:
 				level_data["rollers"].append({
+					"x": x,
+					"y": y,
+				})
+			elif cell_type == CELL_MOLE:
+				level_data["moles"].append({
 					"x": x,
 					"y": y,
 				})
@@ -1894,8 +2031,9 @@ func _get_cell_pixel_size() -> int:
 func _apply_cell_button_visual(button: Button, x: int, y: int) -> void:
 	var preview_state: String = _get_preview_state(x, y)
 	var cell: Dictionary = grid[y][x]
-	button.text = ""
-	button.icon = null if preview_state != "" else _cell_texture(cell)
+	var shows_mole: bool = preview_state == "" and String(cell["type"]) == CELL_MOLE
+	button.text = "M" if shows_mole else ""
+	button.icon = null if preview_state != "" or shows_mole else _cell_texture(cell)
 	button.add_theme_font_size_override("font_size", _ui_size(18))
 	button.tooltip_text = "(%d, %d) %s" % [x, y, _cell_tooltip(cell)]
 	button.add_theme_stylebox_override("normal", _cell_style(cell, false, preview_state))
@@ -1923,6 +2061,8 @@ func _cell_texture(cell: Dictionary) -> Texture2D:
 		return _get_tile_texture("portal")
 	if cell_type == CELL_ROLLER:
 		return _get_tile_texture("roller")
+	if cell_type == CELL_MOLE:
+		return _get_tile_texture("ground")
 	return _get_tile_texture("ground")
 
 
@@ -1954,6 +2094,8 @@ func _cell_tooltip(cell: Dictionary) -> String:
 		return "%s%sPortal %s" % [powered_text.capitalize(), road_text, String(cell.get("portal_pair", PORTAL_PAIR_A))]
 	if cell_type == CELL_ROLLER:
 		return "Roller"
+	if cell_type == CELL_MOLE:
+		return "Mole"
 	return "Ground"
 
 
@@ -1987,6 +2129,9 @@ func _cell_style(cell: Dictionary, hover: bool = false, preview_state: String = 
 	elif cell_type == CELL_ROLLER:
 		background = Color("#92400e")
 		border = Color("#fdba74")
+	elif cell_type == CELL_MOLE:
+		background = Color("#713f12")
+		border = Color("#fbbf24")
 
 	if preview_state == "valid":
 		background = Color("#facc15")

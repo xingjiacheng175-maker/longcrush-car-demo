@@ -1,6 +1,6 @@
 # Demo Operator Guide
 
-Last updated: 2026-05-12
+Last updated: 2026-05-13
 
 This guide is for designers opening the Godot demo to playtest or edit levels.
 
@@ -59,6 +59,8 @@ In the running demo:
 - Roller cells trigger when paved over.
 - A triggered roller turns the surrounding 3x3 editable area into road.
 - Roller paving does not overwrite start, goal, blocks, or portals.
+- Mole cells block road placement.
+- After each successful road placement, moles move to random empty cells.
 - A road piece must connect to the powered road network to be placed.
 
 Hover preview:
@@ -82,6 +84,7 @@ The debug panel shows:
 - block count,
 - portal count,
 - roller count,
+- mole count,
 - powered cell count,
 - generated route cell count.
 
@@ -157,6 +160,7 @@ Brushes:
 - `Goal`: moves the unique destination.
 - `Portal A`: paints a linked portal cell.
 - `Roller`: paints a roller cell.
+- `Mole`: paints a moving blocker cell.
 
 Click board cells to paint.
 
@@ -168,6 +172,7 @@ Notes:
 - Cash and blocks cannot overlap start or goal.
 - Portals cannot overlap start or goal.
 - Rollers cannot overlap start or goal.
+- Moles cannot overlap start or goal.
 - Portal A must have exactly two cells to be valid.
 
 ## Validation
@@ -186,7 +191,7 @@ Common validation problems:
 - missing goal,
 - start and goal overlap,
 - start or goal is outside the board,
-- start/goal overlaps cash, blocks, portals, or rollers,
+- start/goal overlaps cash, blocks, portals, rollers, or moles,
 - Portal A has only one cell or more than two cells.
 
 ## Save A Level
@@ -255,11 +260,12 @@ For team work, let one person maintain final level order.
 5. Add cash to reward detours.
 6. Add two Portal A cells only when the level needs a teleport connection.
 7. Add rollers when the level needs a 3x3 road expansion trigger.
-8. Save the level.
-9. Exit editor mode with `E`.
-10. Playtest the level.
-11. Adjust fuel, blocks, cash, portals, and rollers.
-12. Save again.
+8. Add moles when the level needs a moving blocker.
+9. Save the level.
+10. Exit editor mode with `E`.
+11. Playtest the level.
+12. Adjust fuel, blocks, cash, portals, rollers, and moles.
+13. Save again.
 
 Playtest goals:
 

@@ -1,6 +1,6 @@
 # Design Summary
 
-Last updated: 2026-05-12
+Last updated: 2026-05-13
 
 ## Source Materials
 
@@ -47,6 +47,7 @@ Player flow:
 - Road cannot be placed on wall/block cells.
 - Portal A links two board cells; reaching one portal connects the paired portal into the powered road network.
 - Roller turns the surrounding 3x3 editable area into road when paved over.
+- Mole blocks road placement and moves to a random empty cell after each successful road placement.
 - User confirmed that detouring for money is the core experience.
 
 ## Fuel / Cash Rule
@@ -74,10 +75,7 @@ Current implemented special tiles:
 
 - `Portal A`: a pair of linked cells. When one Portal A cell is connected to the powered road network, the paired Portal A cell becomes connected too.
 - `Roller`: when paved over, it turns the surrounding 3x3 area into road. It affects empty cells, cash cells, roads, and other roller cells, but does not overwrite start, goal, blocks, or portals.
-
-Current planned special tiles:
-
-- Mole: after each road placement, it moves to a random empty cell and blocks placement on that cell.
+- `Mole`: a moving blocker. Road pieces cannot cover it; after each successful road placement, every mole moves to a random empty cell if one is available.
 
 ## Old Demo Logic Worth Preserving
 
