@@ -50,6 +50,8 @@ In the running demo:
 - Place road pieces to connect the taxi road network to the goal.
 - Each road placement costs `1` fuel.
 - If fuel reaches `0` before connecting the goal, the level is lost.
+- On victory, every road cell on the board adds `$10` cash.
+- Start and placed road cells count for victory cash; the goal tile does not.
 - Cash cells are collected when road is placed onto them or when they touch the powered road network.
 - Collected cash cells become road and can extend the connected road network.
 - Blocks are obstacles and cannot be covered by road.

@@ -28,8 +28,20 @@ Before continuing work in a new Codex session or on a new device, read these fil
 2. `docs/project_status.md`
 3. `docs/design_summary.md`
 4. `docs/handoff.md`
+5. `docs/modules/README.md`
 
 Then continue from the current status instead of restarting analysis from scratch.
+
+After reading the session-start files, read only the relevant module document for the task:
+
+- Gameplay changes: `docs/modules/gameplay.md`
+- Special tiles / obstacles: `docs/modules/special_tiles.md`
+- Level JSON / authoring: `docs/modules/level_authoring.md`
+- Runtime editor: `docs/modules/editor_workflow.md`
+- Assets: `docs/modules/assets.md`
+- Testing: `docs/modules/testing.md`
+
+Also read any local `AGENTS.md` in the directory being edited, such as `scripts/AGENTS.md`, `levels/AGENTS.md`, or `assets/AGENTS.md`.
 
 ## Planned Phases
 
@@ -66,6 +78,7 @@ Some phases are already implemented. Use `docs/project_status.md` as the current
 9. After each completed phase, update:
    - `docs/project_status.md`
    - `docs/handoff.md`
+   - the relevant module document under `docs/modules/` if behavior, workflow, assets, or level rules changed.
 10. Do not develop unrelated features during documentation-only requests.
 
 ## Implementation Guidance

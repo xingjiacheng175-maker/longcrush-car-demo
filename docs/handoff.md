@@ -10,25 +10,32 @@ The user works across a home Windows machine and a company Mac. Keep this file a
 
 ## Latest Completed Phase
 
-Mole UI Art Integration.
+Completion Cash Scoring.
 
 Files changed in this phase:
 
-- `assets/placeholders/mole.png`
-- `scripts/Main.gd`
+- `docs/modules/gameplay.md`
+- `docs/development/manual_test_checklist.md`
+- `docs/demo_operator_guide.md`
+- `docs/demo_operator_guide_zh.md`
 - `docs/project_status.md`
 - `docs/handoff.md`
+- `scripts/Main.gd`
 
 What works now:
 
-- Mole cells render with custom 256x256 placeholder art from `assets/placeholders/mole.png`.
-- Mole gameplay behavior is unchanged.
+- Victory cash is now based on road coverage.
+- On victory, each score-counted road cell gives `10` cash.
+- Score-counted road cells include the start tile, normal road tiles, paved cash tiles, and paved portal tiles.
+- The goal tile does not count as road.
+- The previous fixed `100` victory bonus and remaining-fuel victory bonus have been removed.
+- Victory message reports the road count and cash bonus.
+- Gameplay docs, operator guides, and manual test checklist now describe the new rule.
 
 How to test:
 
-- Run `scenes/Main.tscn` with Godot editor `F6`.
-- Press `E`, paint one or more `Mole` cells, and confirm the mole art appears.
-- Exit editor mode, confirm road pieces cannot cover mole cells, then place a valid road piece and confirm moles move.
+- Run `git diff --check`.
+- In Godot 4, open `scenes/Main.tscn`, press `F6`, complete a level, and confirm the cash gain equals `road cell count * 10`.
 
 Known issues:
 
@@ -36,7 +43,7 @@ Known issues:
 
 Recommended next step:
 
-- Author and playtest levels that use Portal A, Roller, and Mole together.
+- Playtest completion cash once in Godot, then continue with the next gameplay tuning or level-authoring phase.
 
 ## New Device / New Session Checklist
 
@@ -48,8 +55,9 @@ Recommended next step:
    - `docs/project_status.md`
    - `docs/design_summary.md`
    - `docs/handoff.md`
-4. In Godot 4, run the main scene with `F6`.
-5. Verify the current behavior before continuing development.
+   - `docs/modules/README.md`
+4. Read the module doc relevant to the task.
+5. In Godot 4, run the main scene with `F6` when the task affects runtime behavior.
 
 ## Current Controls
 
@@ -75,6 +83,9 @@ Recommended next step:
 
 - Cash/fuel rewards are collected when paved over or when adjacent to the powered road network.
 - Collected reward cells become road cells and can extend the powered network.
+- On victory, each score-counted road cell gives `10` cash.
+- The start tile, normal road tiles, paved cash tiles, and paved portal tiles count for victory cash.
+- The goal tile does not count for victory cash.
 - Portal A cells are linked. When the powered road network reaches one Portal A cell, the paired Portal A cell also becomes powered.
 - Roller cells trigger when paved over, turning the surrounding 3x3 editable area into road.
 - Roller paving does not overwrite start, goal, blocks, or portals.

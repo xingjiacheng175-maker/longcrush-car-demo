@@ -12,7 +12,7 @@ const CELL_MOLE := "mole"
 const PORTAL_PAIR_A := "A"
 
 const INITIAL_FUEL := 3
-const FUEL_TO_SCORE_RATIO := 10
+const CASH_PER_ROAD_CELL := 10
 const LEVEL_LIST_PATH := "res://levels/levels.json"
 const LEVEL_PATH_TEMPLATE := "res://levels/level_%03d.json"
 const EDITOR_MIN_GRID_WIDTH := 4
@@ -1106,8 +1106,10 @@ func _on_cell_pressed(x: int, y: int) -> void:
 		status = "won"
 		selected_shape_index = -1
 		hover_origin = Vector2i(-1, -1)
-		score += fuel * FUEL_TO_SCORE_RATIO + 100
-		message = "Route complete. Passenger delivered. Press Next Level to generate a harder route."
+		var road_count := _count_score_road_cells()
+		var completion_bonus := road_count * CASH_PER_ROAD_CELL
+		score += completion_bonus
+		message = "Route complete. %d road cells paid $%d. Press Next Level." % [road_count, completion_bonus]
 	elif fuel <= 0:
 		fuel = 0
 		status = "lost"
@@ -1141,6 +1143,19 @@ func _is_placement_valid(shape: Dictionary, origin: Vector2i) -> bool:
 			touches_powered_road = true
 
 	return touches_powered_road and adds_new_road
+
+
+func _count_score_road_cells() -> int:
+	var count := 0
+	for y in range(grid_height):
+		for x in range(grid_width):
+			var cell: Dictionary = grid[y][x]
+			var cell_type := String(cell["type"])
+			if cell_type == CELL_START or cell_type == CELL_PATH:
+				count += 1
+			elif (cell_type == CELL_FUEL or cell_type == CELL_PORTAL) and bool(cell["has_road"]):
+				count += 1
+	return count
 
 
 func _update_powered_status() -> void:

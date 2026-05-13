@@ -6,34 +6,40 @@ Last updated: 2026-05-13
 
 The Godot 4 prototype is playable and has the core MVP loop, JSON level loading, generated fallback levels, placeholder art, debug tools, and an improved in-game editor.
 
-Current focus is special-tile gameplay. Portal, roller, and mole special tiles can be authored in the runtime editor and saved in JSON.
+Current focus is gameplay tuning on top of the playable prototype. The code is still intentionally kept mostly in `scripts/Main.gd`, but project knowledge is now split into module docs and local rules so future work can read less context.
 
 ## Latest Completed Phase
 
-Mole UI Art Integration.
+Completion Cash Scoring.
 
 Files changed in this phase:
 
-- `assets/placeholders/mole.png`
-- `scripts/Main.gd`
+- `docs/modules/gameplay.md`
+- `docs/development/manual_test_checklist.md`
+- `docs/demo_operator_guide.md`
+- `docs/demo_operator_guide_zh.md`
 - `docs/project_status.md`
 - `docs/handoff.md`
+- `scripts/Main.gd`
 
 Current completed functionality:
 
-- Added final 256x256 mole placeholder art from `2a.png`.
-- Mole cells now render with `mole.png` instead of the temporary `M` marker.
-- Mole gameplay behavior is unchanged.
+- Changed the victory cash rule.
+- On victory, each score-counted road cell gives `10` cash.
+- Score-counted road cells include the start tile, normal road tiles, paved cash tiles, and paved portal tiles.
+- The goal tile does not count as road.
+- Removed the previous fixed `100` victory bonus and remaining-fuel victory bonus.
+- Victory message now reports the road count and cash bonus.
+- Updated gameplay docs, operator guides, and manual test checklist.
 
 Current run/test method:
 
-- Open the Godot project and run `scenes/Main.tscn` with `F6`.
-- Press `E`, paint one or more `Mole` cells, and confirm the mole art appears.
-- Exit editor mode, confirm road pieces cannot be placed on mole cells, then place a valid road piece and confirm moles move.
+- Run `git diff --check`.
+- In Godot 4, open `scenes/Main.tscn`, press `F6`, complete a level, and confirm the cash gain equals `road cell count * 10`.
 
 Current known issues:
 
-- Godot CLI is still unavailable in the Codex environment, so final runtime validation should be done with Godot editor `F6`.
+- Godot CLI is still unavailable in the Codex environment, so gameplay/runtime validation still relies on Godot editor `F6`.
 
 If opening a new Codex session, read:
 
@@ -41,6 +47,9 @@ If opening a new Codex session, read:
 2. `docs/project_status.md`
 3. `docs/design_summary.md`
 4. `docs/handoff.md`
+5. `docs/modules/README.md`
+
+Then read the relevant module document for the task.
 
 ## Repository
 
@@ -54,6 +63,9 @@ If opening a new Codex session, read:
 - `docs/project_status.md`: current progress and next steps.
 - `docs/design_summary.md`: gameplay and old demo summary.
 - `docs/handoff.md`: cross-device / new-session handoff guide.
+- `docs/modules/`: task-specific module docs.
+- `docs/development/manual_test_checklist.md`: manual regression checklist.
+- `docs/development/refactor_plan.md`: staged code split plan.
 - `project.godot`: Godot project config.
 - `scenes/Main.tscn`: main scene.
 - `scripts/Main.gd`: current prototype implementation.
