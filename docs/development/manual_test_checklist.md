@@ -19,10 +19,13 @@ Use this checklist after gameplay, editor, level, or asset changes.
 5. Place a valid road piece and confirm fuel decreases by `1`.
 6. Confirm the HUD `Win +$N` preview updates after the road is placed.
 7. Connect to the goal and confirm victory.
-8. Confirm the victory message shows road cell count and completion cash.
-9. Confirm cash increases by `road cell count * 10`.
-10. Restart the level.
-11. Run out of fuel before reaching the goal and confirm loss.
+8. Confirm the victory panel appears.
+9. Confirm the victory panel shows road cell count, level cash, and total cash.
+10. Confirm cash increases by `road cell count * 10`.
+11. Press `Close` and confirm the panel closes without changing level.
+12. Restart the level.
+13. Win again, press `Next Level`, and confirm the next configured level loads.
+14. Run out of fuel before reaching the goal and confirm loss.
 
 ## Cash Test
 

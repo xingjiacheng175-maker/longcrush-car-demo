@@ -10,7 +10,7 @@ The user works across a home Windows machine and a company Mac. Keep this file a
 
 ## Latest Completed Phase
 
-Live Completion Cash Preview.
+Victory Panel V1.
 
 Files changed in this phase:
 
@@ -24,18 +24,19 @@ Files changed in this phase:
 
 What works now:
 
-- The top HUD now previews completion cash during play.
-- During play, the HUD shows `Cash $current | Win +$preview`.
-- `Win +$preview` updates after road placement, cash conversion, portal paving, and roller paving.
-- Victory settlement reuses the same completion cash helper as the HUD preview.
-- After victory, the HUD shows the settled total `Cash` value.
-- Gameplay docs, operator guides, and manual test checklist now describe the live preview.
+- A victory panel appears when the player connects to the goal.
+- The panel shows road cell count, level cash, and total cash.
+- The panel has `Next Level`, `Restart`, and `Close` buttons.
+- The side-panel `Next Level` button remains as a fallback control.
+- Restarting or loading the next level hides the victory panel.
+- Gameplay docs, operator guides, and manual test checklist now describe the victory panel.
 
 How to test:
 
 - Run `git diff --check`.
-- In Godot 4, open `scenes/Main.tscn`, press `F6`, place road pieces, and confirm `Win +$N` updates after each successful placement.
-- Complete a level and confirm the final cash gain equals the last previewed completion cash.
+- In Godot 4, open `scenes/Main.tscn`, press `F6`, complete a level, and confirm the victory panel appears.
+- Confirm the panel values match road count, level cash, and total cash.
+- Confirm `Close`, `Restart`, and `Next Level` work from the panel.
 
 Known issues:
 
@@ -43,7 +44,7 @@ Known issues:
 
 Recommended next step:
 
-- Add a victory panel for clearer end-of-level feedback.
+- Playtest the victory panel and then decide whether to add a matching failure panel.
 
 ## New Device / New Session Checklist
 
@@ -87,6 +88,7 @@ Recommended next step:
 - The start tile, normal road tiles, paved cash tiles, and paved portal tiles count for victory cash.
 - The goal tile does not count for victory cash.
 - During play, the top HUD previews the current completion cash as `Win +$N`.
+- Connecting to the goal opens a victory panel with road count, level cash, total cash, and action buttons.
 - Portal A cells are linked. When the powered road network reaches one Portal A cell, the paired Portal A cell also becomes powered.
 - Roller cells trigger when paved over, turning the surrounding 3x3 editable area into road.
 - Roller paving does not overwrite start, goal, blocks, or portals.

@@ -46,6 +46,8 @@ This module covers the player-facing road-building rules:
 - The old fixed `$100` victory bonus has been removed.
 - During play, the HUD previews the current completion cash as `Win +$N`.
 - After victory, the previewed completion cash is added to total `Cash`.
+- After victory, a victory panel shows road cells, level cash, and total cash.
+- The victory panel offers `Next Level`, `Restart`, and `Close`.
 
 ## Code Touch Points
 
@@ -57,6 +59,7 @@ Most gameplay logic is currently in `scripts/Main.gd`:
 - `_count_score_road_cells`,
 - `_get_completion_cash_bonus`,
 - `_refresh_hud`,
+- `_show_victory_panel`,
 - `_update_powered_status`,
 - `_harvest_connected_fuel`,
 - `_convert_fuel_to_road`.

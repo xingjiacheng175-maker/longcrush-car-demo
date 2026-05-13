@@ -10,7 +10,7 @@ Current focus is gameplay tuning on top of the playable prototype. The code is s
 
 ## Latest Completed Phase
 
-Live Completion Cash Preview.
+Victory Panel V1.
 
 Files changed in this phase:
 
@@ -24,18 +24,19 @@ Files changed in this phase:
 
 Current completed functionality:
 
-- Added live completion cash preview to the top HUD.
-- During play, the HUD shows `Cash $current | Win +$preview`.
-- `Win +$preview` updates after road placement, cash conversion, portal paving, and roller paving because it is calculated from current road coverage.
-- Victory settlement now reuses the same completion cash helper as the HUD preview.
-- After victory, the HUD shows the settled total `Cash` value.
+- Added a victory panel that appears when the player connects to the goal.
+- The panel shows road cell count, level cash, and total cash.
+- The panel has `Next Level`, `Restart`, and `Close` buttons.
+- The side-panel `Next Level` button remains as a fallback control.
+- Restarting or loading the next level hides the victory panel.
 - Updated gameplay docs, operator guides, and manual test checklist.
 
 Current run/test method:
 
 - Run `git diff --check`.
-- In Godot 4, open `scenes/Main.tscn`, press `F6`, place road pieces, and confirm `Win +$N` updates after each successful placement.
-- Complete a level and confirm the final cash gain equals the last previewed completion cash.
+- In Godot 4, open `scenes/Main.tscn`, press `F6`, complete a level, and confirm the victory panel appears.
+- Confirm the panel values match road count, level cash, and total cash.
+- Confirm `Close`, `Restart`, and `Next Level` work from the panel.
 
 Current known issues:
 

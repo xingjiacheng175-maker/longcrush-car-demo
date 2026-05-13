@@ -93,6 +93,9 @@ var editor_initial_fuel_spin: SpinBox
 var editor_cash_value_spin: SpinBox
 var editor_validation_label: Label
 var editor_json_text: TextEdit
+var victory_overlay: Control
+var victory_title_label: Label
+var victory_summary_label: Label
 
 
 func _ready() -> void:
@@ -396,6 +399,74 @@ func _build_ui() -> void:
 	editor_json_text.editable = false
 	editor_box.add_child(editor_json_text)
 
+	_build_victory_panel()
+
+
+func _build_victory_panel() -> void:
+	victory_overlay = Control.new()
+	victory_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	victory_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	victory_overlay.visible = false
+	add_child(victory_overlay)
+
+	var dim := ColorRect.new()
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.color = Color(0, 0, 0, 0.55)
+	victory_overlay.add_child(dim)
+
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	victory_overlay.add_child(center)
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(_ui_size(360), 0)
+	center.add_child(panel)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", _ui_size(18))
+	margin.add_theme_constant_override("margin_top", _ui_size(16))
+	margin.add_theme_constant_override("margin_right", _ui_size(18))
+	margin.add_theme_constant_override("margin_bottom", _ui_size(16))
+	panel.add_child(margin)
+
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", _ui_size(10))
+	margin.add_child(box)
+
+	victory_title_label = Label.new()
+	victory_title_label.text = "Level Complete"
+	victory_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	victory_title_label.add_theme_font_size_override("font_size", _ui_size(22))
+	box.add_child(victory_title_label)
+
+	victory_summary_label = Label.new()
+	victory_summary_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	victory_summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	victory_summary_label.text = ""
+	box.add_child(victory_summary_label)
+
+	var button_row := HBoxContainer.new()
+	button_row.add_theme_constant_override("separation", _ui_size(8))
+	box.add_child(button_row)
+
+	var next_level_button := Button.new()
+	next_level_button.text = "Next Level"
+	next_level_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	next_level_button.pressed.connect(_on_victory_next_pressed)
+	button_row.add_child(next_level_button)
+
+	var restart_button := Button.new()
+	restart_button.text = "Restart"
+	restart_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	restart_button.pressed.connect(_on_victory_restart_pressed)
+	button_row.add_child(restart_button)
+
+	var close_button := Button.new()
+	close_button.text = "Close"
+	close_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	close_button.pressed.connect(_hide_victory_panel)
+	button_row.add_child(close_button)
+
 
 func _ui_size(value: int) -> int:
 	return int(round(float(value) * UI_SCALE))
@@ -441,6 +512,7 @@ func _make_editor_brush_button(label_text: String, brush: String) -> Button:
 
 
 func init_level() -> void:
+	_hide_victory_panel()
 	status = "playing"
 	selected_shape_index = -1
 	hover_origin = Vector2i(-1, -1)
@@ -1110,6 +1182,7 @@ func _on_cell_pressed(x: int, y: int) -> void:
 		var completion_bonus := _get_completion_cash_bonus()
 		score += completion_bonus
 		message = "Route complete. %d road cells paid $%d. Press Next Level." % [road_count, completion_bonus]
+		_show_victory_panel(road_count, completion_bonus)
 	elif fuel <= 0:
 		fuel = 0
 		status = "lost"
@@ -1386,6 +1459,27 @@ func _refresh_hud() -> void:
 		next_button.text = "Next Level" if status == "won" else "Next Level Locked"
 	_refresh_debug_panel()
 	_refresh_editor_panel()
+
+
+func _show_victory_panel(road_count: int, completion_bonus: int) -> void:
+	if not victory_overlay:
+		return
+	victory_title_label.text = "Level %d Complete" % current_level
+	victory_summary_label.text = "Road cells: %d\nLevel cash: +$%d\nTotal cash: $%d" % [road_count, completion_bonus, score]
+	victory_overlay.visible = true
+
+
+func _hide_victory_panel() -> void:
+	if victory_overlay:
+		victory_overlay.visible = false
+
+
+func _on_victory_next_pressed() -> void:
+	_on_next_level_pressed()
+
+
+func _on_victory_restart_pressed() -> void:
+	init_level()
 
 
 func _refresh_level_jump_selector() -> void:
