@@ -10,7 +10,7 @@ The user works across a home Windows machine and a company Mac. Keep this file a
 
 ## Latest Completed Phase
 
-Completion Cash Scoring.
+Live Completion Cash Preview.
 
 Files changed in this phase:
 
@@ -24,18 +24,18 @@ Files changed in this phase:
 
 What works now:
 
-- Victory cash is now based on road coverage.
-- On victory, each score-counted road cell gives `10` cash.
-- Score-counted road cells include the start tile, normal road tiles, paved cash tiles, and paved portal tiles.
-- The goal tile does not count as road.
-- The previous fixed `100` victory bonus and remaining-fuel victory bonus have been removed.
-- Victory message reports the road count and cash bonus.
-- Gameplay docs, operator guides, and manual test checklist now describe the new rule.
+- The top HUD now previews completion cash during play.
+- During play, the HUD shows `Cash $current | Win +$preview`.
+- `Win +$preview` updates after road placement, cash conversion, portal paving, and roller paving.
+- Victory settlement reuses the same completion cash helper as the HUD preview.
+- After victory, the HUD shows the settled total `Cash` value.
+- Gameplay docs, operator guides, and manual test checklist now describe the live preview.
 
 How to test:
 
 - Run `git diff --check`.
-- In Godot 4, open `scenes/Main.tscn`, press `F6`, complete a level, and confirm the cash gain equals `road cell count * 10`.
+- In Godot 4, open `scenes/Main.tscn`, press `F6`, place road pieces, and confirm `Win +$N` updates after each successful placement.
+- Complete a level and confirm the final cash gain equals the last previewed completion cash.
 
 Known issues:
 
@@ -43,7 +43,7 @@ Known issues:
 
 Recommended next step:
 
-- Playtest completion cash once in Godot, then continue with the next gameplay tuning or level-authoring phase.
+- Add a victory panel for clearer end-of-level feedback.
 
 ## New Device / New Session Checklist
 
@@ -86,6 +86,7 @@ Recommended next step:
 - On victory, each score-counted road cell gives `10` cash.
 - The start tile, normal road tiles, paved cash tiles, and paved portal tiles count for victory cash.
 - The goal tile does not count for victory cash.
+- During play, the top HUD previews the current completion cash as `Win +$N`.
 - Portal A cells are linked. When the powered road network reaches one Portal A cell, the paired Portal A cell also becomes powered.
 - Roller cells trigger when paved over, turning the surrounding 3x3 editable area into road.
 - Roller paving does not overwrite start, goal, blocks, or portals.

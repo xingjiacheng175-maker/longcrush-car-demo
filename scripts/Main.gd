@@ -1107,7 +1107,7 @@ func _on_cell_pressed(x: int, y: int) -> void:
 		selected_shape_index = -1
 		hover_origin = Vector2i(-1, -1)
 		var road_count := _count_score_road_cells()
-		var completion_bonus := road_count * CASH_PER_ROAD_CELL
+		var completion_bonus := _get_completion_cash_bonus()
 		score += completion_bonus
 		message = "Route complete. %d road cells paid $%d. Press Next Level." % [road_count, completion_bonus]
 	elif fuel <= 0:
@@ -1156,6 +1156,10 @@ func _count_score_road_cells() -> int:
 			elif (cell_type == CELL_FUEL or cell_type == CELL_PORTAL) and bool(cell["has_road"]):
 				count += 1
 	return count
+
+
+func _get_completion_cash_bonus() -> int:
+	return _count_score_road_cells() * CASH_PER_ROAD_CELL
 
 
 func _update_powered_status() -> void:
@@ -1370,7 +1374,10 @@ func _refresh_all() -> void:
 func _refresh_hud() -> void:
 	level_label.text = "Level %d (%s)" % [current_level, level_source]
 	fuel_label.text = "Fuel %d" % fuel
-	score_label.text = "Cash $%d" % score
+	if status == "playing":
+		score_label.text = "Cash $%d | Win +$%d" % [score, _get_completion_cash_bonus()]
+	else:
+		score_label.text = "Cash $%d" % score
 	status_label.text = "Mode Editor" if editor_mode else "Status %s" % status.capitalize()
 	message_label.text = message
 	_refresh_level_jump_selector()

@@ -17,11 +17,12 @@ Use this checklist after gameplay, editor, level, or asset changes.
 3. Hover over valid and invalid cells.
 4. Confirm yellow preview means valid and red preview means invalid.
 5. Place a valid road piece and confirm fuel decreases by `1`.
-6. Connect to the goal and confirm victory.
-7. Confirm the victory message shows road cell count and completion cash.
-8. Confirm cash increases by `road cell count * 10`.
-9. Restart the level.
-10. Run out of fuel before reaching the goal and confirm loss.
+6. Confirm the HUD `Win +$N` preview updates after the road is placed.
+7. Connect to the goal and confirm victory.
+8. Confirm the victory message shows road cell count and completion cash.
+9. Confirm cash increases by `road cell count * 10`.
+10. Restart the level.
+11. Run out of fuel before reaching the goal and confirm loss.
 
 ## Cash Test
 

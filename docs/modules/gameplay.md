@@ -44,6 +44,8 @@ This module covers the player-facing road-building rules:
 - The goal tile does not count as a road cell.
 - Remaining fuel no longer adds completion cash.
 - The old fixed `$100` victory bonus has been removed.
+- During play, the HUD previews the current completion cash as `Win +$N`.
+- After victory, the previewed completion cash is added to total `Cash`.
 
 ## Code Touch Points
 
@@ -53,6 +55,8 @@ Most gameplay logic is currently in `scripts/Main.gd`:
 - `_is_placement_valid`,
 - `_on_cell_pressed`,
 - `_count_score_road_cells`,
+- `_get_completion_cash_bonus`,
+- `_refresh_hud`,
 - `_update_powered_status`,
 - `_harvest_connected_fuel`,
 - `_convert_fuel_to_road`.

@@ -10,7 +10,7 @@ Current focus is gameplay tuning on top of the playable prototype. The code is s
 
 ## Latest Completed Phase
 
-Completion Cash Scoring.
+Live Completion Cash Preview.
 
 Files changed in this phase:
 
@@ -24,18 +24,18 @@ Files changed in this phase:
 
 Current completed functionality:
 
-- Changed the victory cash rule.
-- On victory, each score-counted road cell gives `10` cash.
-- Score-counted road cells include the start tile, normal road tiles, paved cash tiles, and paved portal tiles.
-- The goal tile does not count as road.
-- Removed the previous fixed `100` victory bonus and remaining-fuel victory bonus.
-- Victory message now reports the road count and cash bonus.
+- Added live completion cash preview to the top HUD.
+- During play, the HUD shows `Cash $current | Win +$preview`.
+- `Win +$preview` updates after road placement, cash conversion, portal paving, and roller paving because it is calculated from current road coverage.
+- Victory settlement now reuses the same completion cash helper as the HUD preview.
+- After victory, the HUD shows the settled total `Cash` value.
 - Updated gameplay docs, operator guides, and manual test checklist.
 
 Current run/test method:
 
 - Run `git diff --check`.
-- In Godot 4, open `scenes/Main.tscn`, press `F6`, complete a level, and confirm the cash gain equals `road cell count * 10`.
+- In Godot 4, open `scenes/Main.tscn`, press `F6`, place road pieces, and confirm `Win +$N` updates after each successful placement.
+- Complete a level and confirm the final cash gain equals the last previewed completion cash.
 
 Current known issues:
 
