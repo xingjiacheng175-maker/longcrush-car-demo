@@ -31,6 +31,7 @@ This module covers the player-facing road-building rules:
 - Cash can be collected by paving over it.
 - Cash can also be collected when it touches the powered road network.
 - Collected cash becomes road and can extend the powered network.
+- Default cash/fuel pickups now give `1` fuel unless a level JSON explicitly sets another value.
 - The prototype currently uses the cash value as fuel gain. Money and fuel are not separate resources yet.
 
 ## Completion Cash Rule
@@ -45,7 +46,7 @@ This module covers the player-facing road-building rules:
 - The goal tile does not count as a road cell.
 - Remaining fuel no longer adds completion cash.
 - The old fixed `$100` victory bonus has been removed.
-- During play, the HUD previews the current completion cash as `Win +$N`.
+- During play, a large income bar above the board shows current `Cash` and previewed `Win +$N`.
 - After victory, the previewed completion cash is added to total `Cash`.
 - After victory, a victory panel shows road cells, level cash, and total cash.
 - The victory panel offers `Next Level`, `Restart`, and `Close`.

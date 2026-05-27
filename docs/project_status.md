@@ -10,33 +10,39 @@ Current focus is gameplay tuning on top of the playable prototype. The code is s
 
 ## Latest Completed Phase
 
-Immediate Rotation Preview Refresh.
+Income Bar And Fuel Pickup Tuning.
 
 Files changed in this phase:
 
 - `docs/modules/gameplay.md`
+- `docs/modules/editor_workflow.md`
+- `docs/modules/level_authoring.md`
 - `docs/development/manual_test_checklist.md`
 - `docs/demo_operator_guide.md`
 - `docs/demo_operator_guide_zh.md`
 - `docs/project_status.md`
 - `docs/handoff.md`
+- `levels/level_001.json`
+- `levels/level_002.json`
+- `levels/level_005.json`
 - `scripts/Main.gd`
 
 Current completed functionality:
 
-- Pressing `R` now refreshes the board hover preview immediately.
-- Players no longer need to move the mouse to see the rotated red/yellow placement preview.
-- Side-panel piece preview refresh still works after rotation.
-- Rotation and placement rules are unchanged.
-- Updated handoff docs and manual test checklist.
+- Moved `Cash` and `Win +$N` into a large income bar above the board.
+- Top HUD now focuses on level, fuel, and status.
+- Editor cash brush default changed from `2` to `1`.
+- Generated cash/fuel pickups now default to value `1`.
+- Existing authored cash values in `level_001`, `level_002`, and `level_005` were changed from `2` to `1`.
+- Updated gameplay, editor, level-authoring, operator, handoff, and test docs.
 
 Current run/test method:
 
 - Run `git diff --check`.
-- In Godot 4, open `scenes/Main.tscn`, press `F6`, select a road piece, and hover over the board.
-- Press `R` without moving the mouse and confirm the board preview updates immediately.
-- Confirm the side-panel selected piece preview still updates after rotation.
-- Place a road piece and confirm gameplay behavior is unchanged.
+- In Godot 4, open `scenes/Main.tscn`, press `F6`, and confirm the large income bar appears above the board.
+- Place roads and confirm `Win +$N` still updates in the income bar.
+- Collect a default cash/fuel pickup and confirm fuel increases by `1`.
+- Enter editor mode and confirm `Cash value` defaults to `1`.
 
 Current known issues:
 
@@ -229,7 +235,7 @@ Road-related placeholder art was simplified into direction-neutral asphalt block
 - Editor supports board width changes from 4 to 14.
 - Editor supports board height changes from 4 to 12.
 - Editor supports initial fuel changes from 1 to 20.
-- Editor supports a current cash brush value from 1 to 9.
+- Editor supports a current cash brush value from 1 to 9, defaulting to 1.
 - Supported brushes:
   - Ground
   - Cash
@@ -241,7 +247,7 @@ Road-related placeholder art was simplified into direction-neutral asphalt block
   - Mole
 - Click board cells to paint.
 - Start and goal are unique; placing one clears the previous one.
-- Cash default value is currently `2`, and newly painted cash uses the current cash brush value.
+- Cash default value is currently `1`, and newly painted cash uses the current cash brush value.
 - Painting resets temporary play state such as roads, powered flags, and collected rewards.
 - Resizing the board preserves in-bounds cash and block cells, clamps start/goal back into the board, and clears temporary play state.
 - JSON level loading and export support independent `width` and `height` values.

@@ -26,7 +26,7 @@ This module covers authored level files, level order, and team workflow for leve
   "start": { "x": 0, "y": 0 },
   "goal": { "x": 5, "y": 5 },
   "cash": [
-    { "x": 1, "y": 1, "value": 2 }
+    { "x": 1, "y": 1, "value": 1 }
   ],
   "blocks": [
     { "x": 2, "y": 0 }
@@ -70,4 +70,3 @@ This module covers authored level files, level order, and team workflow for leve
 4. Test in Godot with `F6`.
 5. Commit JSON changes and relevant docs.
 6. Push and create a PR if collaborating through GitHub.
-

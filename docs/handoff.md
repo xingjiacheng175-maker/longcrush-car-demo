@@ -10,33 +10,39 @@ The user works across a home Windows machine and a company Mac. Keep this file a
 
 ## Latest Completed Phase
 
-Immediate Rotation Preview Refresh.
+Income Bar And Fuel Pickup Tuning.
 
 Files changed in this phase:
 
 - `docs/modules/gameplay.md`
+- `docs/modules/editor_workflow.md`
+- `docs/modules/level_authoring.md`
 - `docs/development/manual_test_checklist.md`
 - `docs/demo_operator_guide.md`
 - `docs/demo_operator_guide_zh.md`
 - `docs/project_status.md`
 - `docs/handoff.md`
+- `levels/level_001.json`
+- `levels/level_002.json`
+- `levels/level_005.json`
 - `scripts/Main.gd`
 
 What works now:
 
-- Pressing `R` now refreshes the board hover preview immediately.
-- Players no longer need to move the mouse to see the rotated red/yellow placement preview.
-- Side-panel piece preview refresh still works after rotation.
-- Rotation and placement rules are unchanged.
-- Handoff docs and manual test checklist now describe the immediate preview refresh.
+- `Cash` and `Win +$N` are now shown in a large income bar above the board.
+- Top HUD now focuses on level, fuel, and status.
+- Editor cash brush default is now `1`.
+- Generated cash/fuel pickups now default to value `1`.
+- Authored cash values in `level_001`, `level_002`, and `level_005` were changed from `2` to `1`.
+- Gameplay, editor, level-authoring, operator, handoff, and test docs now describe the new layout and pickup value.
 
 How to test:
 
 - Run `git diff --check`.
-- In Godot 4, open `scenes/Main.tscn`, press `F6`, select a road piece, and hover over the board.
-- Press `R` without moving the mouse and confirm the board preview updates immediately.
-- Confirm the side-panel selected piece preview still updates after rotation.
-- Place a road piece and confirm gameplay behavior is unchanged.
+- In Godot 4, open `scenes/Main.tscn`, press `F6`, and confirm the large income bar appears above the board.
+- Place roads and confirm `Win +$N` still updates in the income bar.
+- Collect a default cash/fuel pickup and confirm fuel increases by `1`.
+- Enter editor mode and confirm `Cash value` defaults to `1`.
 
 Known issues:
 
@@ -44,7 +50,7 @@ Known issues:
 
 Recommended next step:
 
-- Playtest the road-piece previews at common window sizes, then continue with the next gameplay or editor task.
+- Playtest the income bar and fuel pickup pacing, then continue with the next gameplay or editor task.
 
 ## New Device / New Session Checklist
 
@@ -87,7 +93,8 @@ Recommended next step:
 - On victory, each score-counted road cell gives `10` cash.
 - The start tile, normal road tiles, paved cash tiles, and paved portal tiles count for victory cash.
 - The goal tile does not count for victory cash.
-- During play, the top HUD previews the current completion cash as `Win +$N`.
+- During play, the large income bar above the board previews current `Cash` and completion cash as `Win +$N`.
+- Default cash/fuel pickups give `1` fuel.
 - Road-piece offers in the side panel are grid previews, not text previews.
 - Connecting to the goal opens a victory panel with road count, level cash, total cash, and action buttons.
 - Victory panel art assets are in `assets/placeholders/victory_panel.png`, `victory_button_normal.png`, and `victory_button_pressed.png`.
@@ -168,7 +175,7 @@ Example:
   "start": { "x": 0, "y": 0 },
   "goal": { "x": 5, "y": 5 },
   "cash": [
-    { "x": 1, "y": 1, "value": 2 }
+    { "x": 1, "y": 1, "value": 1 }
   ],
   "blocks": [
     { "x": 2, "y": 0 }
@@ -194,7 +201,7 @@ Example:
 - Board width can be changed from 4 to 14.
 - Board height can be changed from 4 to 12.
 - Initial fuel can be changed from 1 to 20.
-- Current cash brush value can be changed from 1 to 9.
+- Current cash brush value can be changed from 1 to 9, defaulting to 1.
 - The `Portal A` brush paints linked portal cells. Use exactly two Portal A cells, or no portals.
 - The `Roller` brush paints any number of roller cells.
 - The `Mole` brush paints any number of moving blocker cells.

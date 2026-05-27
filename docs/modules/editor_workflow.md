@@ -16,6 +16,7 @@ This module covers the in-game/runtime level editor that appears after pressing 
 - Change board height from `4` to `12`.
 - Change initial fuel from `1` to `20`.
 - Change cash brush value from `1` to `9`.
+- New cash cells default to value `1`.
 
 ## Brushes
 
@@ -59,4 +60,3 @@ When changing the editor:
 - Update `docs/modules/editor_workflow.md`.
 - Update `docs/demo_operator_guide.md` and `docs/demo_operator_guide_zh.md` if designers need to know.
 - Run editor checks in `docs/development/manual_test_checklist.md`.
-

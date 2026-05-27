@@ -70,7 +70,7 @@ var current_level_entry: String = ""
 var debug_visible: bool = false
 var editor_mode: bool = false
 var editor_brush: String = CELL_ROCK
-var editor_cash_value: int = 2
+var editor_cash_value: int = 1
 var editor_refreshing_level_selector: bool = false
 
 var board_grid: GridContainer
@@ -186,11 +186,9 @@ func _build_ui() -> void:
 
 	level_label = _make_hud_label()
 	fuel_label = _make_hud_label()
-	score_label = _make_hud_label()
 	status_label = _make_hud_label()
 	hud.add_child(level_label)
 	hud.add_child(fuel_label)
-	hud.add_child(score_label)
 	hud.add_child(status_label)
 
 	var main_row := HBoxContainer.new()
@@ -198,13 +196,35 @@ func _build_ui() -> void:
 	main_row.add_theme_constant_override("separation", _ui_size(18))
 	root.add_child(main_row)
 
+	var board_column := VBoxContainer.new()
+	board_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	board_column.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	board_column.add_theme_constant_override("separation", _ui_size(10))
+	main_row.add_child(board_column)
+
+	var income_panel := PanelContainer.new()
+	income_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	income_panel.add_theme_stylebox_override("panel", _income_panel_style())
+	board_column.add_child(income_panel)
+
+	score_label = Label.new()
+	score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	score_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	score_label.add_theme_font_size_override("font_size", _ui_size(26))
+	score_label.add_theme_color_override("font_color", Color("#fef3c7"))
+	score_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.45))
+	score_label.add_theme_constant_override("shadow_offset_x", 2)
+	score_label.add_theme_constant_override("shadow_offset_y", 2)
+	score_label.custom_minimum_size = Vector2(0, _ui_size(58))
+	income_panel.add_child(score_label)
+
 	board_grid = GridContainer.new()
 	board_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	board_grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	board_grid.add_theme_constant_override("h_separation", _ui_size(4))
 	board_grid.add_theme_constant_override("v_separation", _ui_size(4))
 	board_grid.mouse_exited.connect(_on_board_mouse_exited)
-	main_row.add_child(board_grid)
+	board_column.add_child(board_grid)
 
 	var side_scroll := ScrollContainer.new()
 	side_scroll.custom_minimum_size = Vector2(_ui_size(375), 0)
@@ -509,6 +529,20 @@ func _make_hud_label() -> Label:
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", _ui_size(18))
 	return label
+
+
+func _income_panel_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color("#4d2d05")
+	style.border_color = Color("#facc15")
+	style.set_border_width_all(3)
+	style.corner_radius_top_left = 8
+	style.corner_radius_top_right = 8
+	style.corner_radius_bottom_left = 8
+	style.corner_radius_bottom_right = 8
+	style.shadow_color = Color(0, 0, 0, 0.3)
+	style.shadow_size = 5
+	return style
 
 
 func _make_editor_spinbox(min_value: float, max_value: float, step_value: float, current_value: float) -> SpinBox:
@@ -906,7 +940,7 @@ func _place_fuels(count: int) -> void:
 	var placed := 0
 	for point in _get_route_fuel_points(count):
 		if placed < count and _is_in_bounds(point.x, point.y) and grid[point.y][point.x]["type"] == CELL_EMPTY:
-			_set_fuel(point.x, point.y, 2)
+			_set_fuel(point.x, point.y, 1)
 			placed += 1
 
 	var attempts := 0
@@ -915,7 +949,7 @@ func _place_fuels(count: int) -> void:
 		var x := rng.randi_range(0, grid_width - 1)
 		var y := rng.randi_range(0, grid_height - 1)
 		if grid[y][x]["type"] == CELL_EMPTY and not _is_protected_generation_cell(x, y):
-			_set_fuel(x, y, rng.randi_range(1, 2))
+			_set_fuel(x, y, 1)
 			placed += 1
 
 
@@ -1480,9 +1514,9 @@ func _refresh_hud() -> void:
 	level_label.text = "Level %d (%s)" % [current_level, level_source]
 	fuel_label.text = "Fuel %d" % fuel
 	if status == "playing":
-		score_label.text = "Cash $%d | Win +$%d" % [score, _get_completion_cash_bonus()]
+		score_label.text = "CASH $%d    WIN +$%d" % [score, _get_completion_cash_bonus()]
 	else:
-		score_label.text = "Cash $%d" % score
+		score_label.text = "CASH $%d" % score
 	status_label.text = "Mode Editor" if editor_mode else "Status %s" % status.capitalize()
 	message_label.text = message
 	_refresh_level_jump_selector()

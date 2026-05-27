@@ -19,7 +19,7 @@ Use this checklist after gameplay, editor, level, or asset changes.
 5. Hover over valid and invalid cells.
 6. Confirm yellow preview means valid and red preview means invalid.
 7. Place a valid road piece and confirm fuel decreases by `1`.
-8. Confirm the HUD `Win +$N` preview updates after the road is placed.
+8. Confirm the large income bar above the board updates `Win +$N` after the road is placed.
 9. Connect to the goal and confirm victory.
 10. Confirm the victory panel appears.
 11. Confirm the victory panel shows road cell count, level cash, and total cash.
@@ -34,6 +34,7 @@ Use this checklist after gameplay, editor, level, or asset changes.
 1. Place road over a cash cell and confirm it is collected.
 2. Connect road adjacent to a cash cell and confirm it is collected.
 3. Confirm collected cash becomes road and can extend the powered network.
+4. Confirm a default cash/fuel pickup adds `1` fuel.
 
 ## Special Tile Test
 
