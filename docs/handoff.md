@@ -10,7 +10,7 @@ The user works across a home Windows machine and a company Mac. Keep this file a
 
 ## Latest Completed Phase
 
-Road Piece Preview Clarity.
+Immediate Rotation Preview Refresh.
 
 Files changed in this phase:
 
@@ -24,18 +24,18 @@ Files changed in this phase:
 
 What works now:
 
-- Side-panel road-piece offers now use clear grid previews instead of text symbols.
-- Selected pieces keep their highlighted panel state and use brighter preview cells.
-- Rotation updates the selected shape preview.
-- Road-piece generation, selection, rotation, and placement rules are unchanged.
-- Gameplay docs, handoff docs, and manual test checklist now describe the clearer previews.
+- Pressing `R` now refreshes the board hover preview immediately.
+- Players no longer need to move the mouse to see the rotated red/yellow placement preview.
+- Side-panel piece preview refresh still works after rotation.
+- Rotation and placement rules are unchanged.
+- Handoff docs and manual test checklist now describe the immediate preview refresh.
 
 How to test:
 
 - Run `git diff --check`.
-- In Godot 4, open `scenes/Main.tscn`, press `F6`, and confirm the three road-piece offers are clear grid previews.
-- Select a road piece and confirm the selected preview remains clear and highlighted.
-- Press `R` and confirm the selected preview updates after rotation.
+- In Godot 4, open `scenes/Main.tscn`, press `F6`, select a road piece, and hover over the board.
+- Press `R` without moving the mouse and confirm the board preview updates immediately.
+- Confirm the side-panel selected piece preview still updates after rotation.
 - Place a road piece and confirm gameplay behavior is unchanged.
 
 Known issues:

@@ -1124,6 +1124,7 @@ func rotate_selected_shape() -> void:
 	current_shapes[selected_shape_index] = _rotate_shape(current_shapes[selected_shape_index])
 	message = "Rotated selected road piece."
 	_refresh_pieces()
+	_refresh_board_visuals()
 	_refresh_hud()
 
 

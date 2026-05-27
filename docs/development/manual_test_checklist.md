@@ -15,18 +15,19 @@ Use this checklist after gameplay, editor, level, or asset changes.
 1. Select a road piece.
 2. Confirm each road-piece offer is shown as a clear grid preview.
 3. Rotate it with `R` and confirm the selected piece preview updates.
-4. Hover over valid and invalid cells.
-5. Confirm yellow preview means valid and red preview means invalid.
-6. Place a valid road piece and confirm fuel decreases by `1`.
-7. Confirm the HUD `Win +$N` preview updates after the road is placed.
-8. Connect to the goal and confirm victory.
-9. Confirm the victory panel appears.
-10. Confirm the victory panel shows road cell count, level cash, and total cash.
-11. Confirm cash increases by `road cell count * 10`.
-12. Press `Close` and confirm the panel closes without changing level.
-13. Restart the level.
-14. Win again, press `Next Level`, and confirm the next configured level loads.
-15. Run out of fuel before reaching the goal and confirm loss.
+4. Hover over the board, press `R` without moving the mouse, and confirm the board preview updates immediately.
+5. Hover over valid and invalid cells.
+6. Confirm yellow preview means valid and red preview means invalid.
+7. Place a valid road piece and confirm fuel decreases by `1`.
+8. Confirm the HUD `Win +$N` preview updates after the road is placed.
+9. Connect to the goal and confirm victory.
+10. Confirm the victory panel appears.
+11. Confirm the victory panel shows road cell count, level cash, and total cash.
+12. Confirm cash increases by `road cell count * 10`.
+13. Press `Close` and confirm the panel closes without changing level.
+14. Restart the level.
+15. Win again, press `Next Level`, and confirm the next configured level loads.
+16. Run out of fuel before reaching the goal and confirm loss.
 
 ## Cash Test
 
