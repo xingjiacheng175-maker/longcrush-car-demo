@@ -1,6 +1,6 @@
 # Project Status
 
-Last updated: 2026-05-13
+Last updated: 2026-05-27
 
 ## Current Phase
 
@@ -10,36 +10,34 @@ Current focus is gameplay tuning on top of the playable prototype. The code is s
 
 ## Latest Completed Phase
 
-Victory Panel Art Integration.
+Road Piece Preview Clarity.
 
 Files changed in this phase:
 
 - `docs/modules/gameplay.md`
-- `docs/modules/assets.md`
 - `docs/development/manual_test_checklist.md`
 - `docs/demo_operator_guide.md`
 - `docs/demo_operator_guide_zh.md`
 - `docs/project_status.md`
 - `docs/handoff.md`
-- `assets/placeholders/victory_panel.png`
-- `assets/placeholders/victory_button_normal.png`
-- `assets/placeholders/victory_button_pressed.png`
 - `scripts/Main.gd`
 
 Current completed functionality:
 
-- Generated and added custom victory UI PNG assets.
-- The victory panel now uses `victory_panel.png` as its UI background.
-- The victory panel buttons now use `victory_button_normal.png` and `victory_button_pressed.png`.
-- Button text and click logic remain driven by Godot controls.
-- Updated gameplay docs, assets docs, and handoff docs.
+- Replaced side-panel road-piece text previews with real grid previews.
+- Each offered shape is drawn from small UI cells instead of `[]` text.
+- Selected pieces keep their highlighted panel state and use brighter preview cells.
+- Rotation still updates the selected shape preview.
+- Road-piece generation, selection, rotation, and placement rules are unchanged.
+- Updated gameplay docs, handoff docs, and manual test checklist.
 
 Current run/test method:
 
 - Run `git diff --check`.
-- In Godot 4, open `scenes/Main.tscn`, press `F6`, complete a level, and confirm the victory panel appears.
-- Confirm the panel and buttons use the new art assets.
-- Confirm panel text remains readable and `Close`, `Restart`, and `Next Level` still work.
+- In Godot 4, open `scenes/Main.tscn`, press `F6`, and confirm the three road-piece offers are clear grid previews.
+- Select a road piece and confirm the selected preview remains clear and highlighted.
+- Press `R` and confirm the selected preview updates after rotation.
+- Place a road piece and confirm gameplay behavior is unchanged.
 
 Current known issues:
 

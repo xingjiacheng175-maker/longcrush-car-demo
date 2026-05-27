@@ -2315,7 +2315,7 @@ func _refresh_pieces() -> void:
 	for i in range(current_shapes.size()):
 		var button := Button.new()
 		button.custom_minimum_size = Vector2(_ui_size(285), _ui_size(123))
-		button.text = _shape_preview_text(current_shapes[i])
+		button.text = ""
 		button.tooltip_text = "Select this road piece."
 		if i == selected_shape_index:
 			button.add_theme_stylebox_override("normal", _piece_style(Color("#854d0e"), Color("#facc15")))
@@ -2323,7 +2323,83 @@ func _refresh_pieces() -> void:
 			button.add_theme_stylebox_override("normal", _piece_style(Color("#27272a"), Color("#71717a")))
 		button.add_theme_stylebox_override("hover", _piece_style(Color("#3f3f46"), Color("#facc15")))
 		button.pressed.connect(_select_shape.bind(i))
+		button.add_child(_make_piece_preview(current_shapes[i], i == selected_shape_index))
 		pieces_container.add_child(button)
+
+
+func _make_piece_preview(shape: Dictionary, selected: bool) -> Control:
+	var wrap := CenterContainer.new()
+	wrap.set_anchors_preset(Control.PRESET_FULL_RECT)
+	wrap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var preview := GridContainer.new()
+	preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	preview.add_theme_constant_override("h_separation", _ui_size(4))
+	preview.add_theme_constant_override("v_separation", _ui_size(4))
+
+	var bounds := _shape_bounds(shape)
+	var width: int = int(bounds["width"])
+	var height: int = int(bounds["height"])
+	var block_size: int = _get_piece_preview_block_size(width, height)
+	preview.columns = width
+	wrap.add_child(preview)
+
+	for y in range(height):
+		for x in range(width):
+			var cell := PanelContainer.new()
+			cell.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			cell.custom_minimum_size = Vector2(block_size, block_size)
+			if _shape_has_cell(shape, x, y):
+				var fill := Color("#84cc16") if selected else Color("#a3e635")
+				var border := Color("#fef3c7") if selected else Color("#3f6212")
+				cell.add_theme_stylebox_override("panel", _piece_preview_cell_style(fill, border))
+			else:
+				cell.add_theme_stylebox_override("panel", _piece_preview_empty_style())
+			preview.add_child(cell)
+
+	return wrap
+
+
+func _shape_bounds(shape: Dictionary) -> Dictionary:
+	var max_x := 0
+	var max_y := 0
+	for point in shape["cells"]:
+		max_x = max(max_x, int(point["x"]))
+		max_y = max(max_y, int(point["y"]))
+	return {
+		"width": max_x + 1,
+		"height": max_y + 1,
+	}
+
+
+func _get_piece_preview_block_size(width: int, height: int) -> int:
+	var max_side: int = max(width, height)
+	if max_side <= 2:
+		return _ui_size(28)
+	if max_side == 3:
+		return _ui_size(24)
+	return _ui_size(21)
+
+
+func _piece_preview_cell_style(background: Color, border: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = background
+	style.border_color = border
+	style.set_border_width_all(2)
+	style.corner_radius_top_left = 3
+	style.corner_radius_top_right = 3
+	style.corner_radius_bottom_left = 3
+	style.corner_radius_bottom_right = 3
+	style.shadow_color = Color(0, 0, 0, 0.28)
+	style.shadow_size = 2
+	return style
+
+
+func _piece_preview_empty_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0, 0, 0, 0)
+	style.border_color = Color(0, 0, 0, 0)
+	return style
 
 
 func _piece_style(background: Color, border: Color) -> StyleBoxFlat:
@@ -2336,22 +2412,6 @@ func _piece_style(background: Color, border: Color) -> StyleBoxFlat:
 	style.corner_radius_bottom_left = 6
 	style.corner_radius_bottom_right = 6
 	return style
-
-
-func _shape_preview_text(shape: Dictionary) -> String:
-	var max_x := 0
-	var max_y := 0
-	for point in shape["cells"]:
-		max_x = max(max_x, int(point["x"]))
-		max_y = max(max_y, int(point["y"]))
-
-	var lines := []
-	for y in range(max_y + 1):
-		var line := ""
-		for x in range(max_x + 1):
-			line += "[]" if _shape_has_cell(shape, x, y) else "  "
-		lines.append(line)
-	return "\n".join(lines)
 
 
 func _shape_has_cell(shape: Dictionary, x: int, y: int) -> bool:

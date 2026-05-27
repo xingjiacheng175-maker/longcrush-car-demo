@@ -35,21 +35,6 @@
 			"value": 2,
 			"x": 5,
 			"y": 2
-		},
-		{
-			"value": 2,
-			"x": 4,
-			"y": 3
-		},
-		{
-			"value": 2,
-			"x": 2,
-			"y": 5
-		},
-		{
-			"value": 2,
-			"x": 1,
-			"y": 6
 		}
 	],
 	"goal": {
@@ -59,7 +44,10 @@
 	"height": 8,
 	"id": "level_002",
 	"initial_fuel": 3,
+	"moles": [],
 	"name": "Edited Level 2",
+	"portals": [],
+	"rollers": [],
 	"start": {
 		"x": 0,
 		"y": 7

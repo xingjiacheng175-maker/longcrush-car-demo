@@ -1,6 +1,6 @@
 # Demo Operator Guide
 
-Last updated: 2026-05-13
+Last updated: 2026-05-27
 
 This guide is for designers opening the Godot demo to playtest or edit levels.
 
@@ -28,14 +28,14 @@ Main files:
 In the running demo:
 
 - Left side: board.
-- Right side: road pieces, control buttons, debug/editor panels.
+- Right side: road-piece grid previews, control buttons, debug/editor panels.
 - Top HUD: level, fuel, cash score, status.
 - During play, the cash HUD also shows `Win +$N`, the cash that would be earned if the level ended now.
 
 ## Playtest Controls
 
-- Left click a road piece: select it.
-- `R`: rotate selected road piece.
+- Left click a road-piece preview: select it.
+- `R`: rotate selected road piece and update its preview.
 - Left click board: place selected road piece.
 - `Restart Level`: restart the current level from its loaded data.
 - `Reload Level`: reload the current level file or generated fallback.

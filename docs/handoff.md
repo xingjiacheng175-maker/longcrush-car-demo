@@ -1,6 +1,6 @@
 # Handoff
 
-Last updated: 2026-05-13
+Last updated: 2026-05-27
 
 ## Purpose
 
@@ -10,36 +10,33 @@ The user works across a home Windows machine and a company Mac. Keep this file a
 
 ## Latest Completed Phase
 
-Victory Panel Art Integration.
+Road Piece Preview Clarity.
 
 Files changed in this phase:
 
 - `docs/modules/gameplay.md`
-- `docs/modules/assets.md`
 - `docs/development/manual_test_checklist.md`
 - `docs/demo_operator_guide.md`
 - `docs/demo_operator_guide_zh.md`
 - `docs/project_status.md`
 - `docs/handoff.md`
-- `assets/placeholders/victory_panel.png`
-- `assets/placeholders/victory_button_normal.png`
-- `assets/placeholders/victory_button_pressed.png`
 - `scripts/Main.gd`
 
 What works now:
 
-- The victory panel uses a custom generated PNG background.
-- The victory panel buttons use custom generated normal and pressed PNG states.
-- Panel text and button labels remain Godot UI text.
-- The existing `Next Level`, `Restart`, and `Close` button logic is unchanged.
-- Gameplay docs, assets docs, and handoff docs now describe the victory UI assets.
+- Side-panel road-piece offers now use clear grid previews instead of text symbols.
+- Selected pieces keep their highlighted panel state and use brighter preview cells.
+- Rotation updates the selected shape preview.
+- Road-piece generation, selection, rotation, and placement rules are unchanged.
+- Gameplay docs, handoff docs, and manual test checklist now describe the clearer previews.
 
 How to test:
 
 - Run `git diff --check`.
-- In Godot 4, open `scenes/Main.tscn`, press `F6`, complete a level, and confirm the victory panel appears.
-- Confirm the panel and buttons use the new art assets.
-- Confirm panel text remains readable and `Close`, `Restart`, and `Next Level` still work.
+- In Godot 4, open `scenes/Main.tscn`, press `F6`, and confirm the three road-piece offers are clear grid previews.
+- Select a road piece and confirm the selected preview remains clear and highlighted.
+- Press `R` and confirm the selected preview updates after rotation.
+- Place a road piece and confirm gameplay behavior is unchanged.
 
 Known issues:
 
@@ -47,7 +44,7 @@ Known issues:
 
 Recommended next step:
 
-- Playtest the victory panel and then decide whether to add a matching failure panel.
+- Playtest the road-piece previews at common window sizes, then continue with the next gameplay or editor task.
 
 ## New Device / New Session Checklist
 
@@ -91,6 +88,7 @@ Recommended next step:
 - The start tile, normal road tiles, paved cash tiles, and paved portal tiles count for victory cash.
 - The goal tile does not count for victory cash.
 - During play, the top HUD previews the current completion cash as `Win +$N`.
+- Road-piece offers in the side panel are grid previews, not text previews.
 - Connecting to the goal opens a victory panel with road count, level cash, total cash, and action buttons.
 - Victory panel art assets are in `assets/placeholders/victory_panel.png`, `victory_button_normal.png`, and `victory_button_pressed.png`.
 - Portal A cells are linked. When the powered road network reaches one Portal A cell, the paired Portal A cell also becomes powered.

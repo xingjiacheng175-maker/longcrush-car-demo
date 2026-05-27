@@ -13,19 +13,20 @@ Use this checklist after gameplay, editor, level, or asset changes.
 ## Gameplay Smoke Test
 
 1. Select a road piece.
-2. Rotate it with `R`.
-3. Hover over valid and invalid cells.
-4. Confirm yellow preview means valid and red preview means invalid.
-5. Place a valid road piece and confirm fuel decreases by `1`.
-6. Confirm the HUD `Win +$N` preview updates after the road is placed.
-7. Connect to the goal and confirm victory.
-8. Confirm the victory panel appears.
-9. Confirm the victory panel shows road cell count, level cash, and total cash.
-10. Confirm cash increases by `road cell count * 10`.
-11. Press `Close` and confirm the panel closes without changing level.
-12. Restart the level.
-13. Win again, press `Next Level`, and confirm the next configured level loads.
-14. Run out of fuel before reaching the goal and confirm loss.
+2. Confirm each road-piece offer is shown as a clear grid preview.
+3. Rotate it with `R` and confirm the selected piece preview updates.
+4. Hover over valid and invalid cells.
+5. Confirm yellow preview means valid and red preview means invalid.
+6. Place a valid road piece and confirm fuel decreases by `1`.
+7. Confirm the HUD `Win +$N` preview updates after the road is placed.
+8. Connect to the goal and confirm victory.
+9. Confirm the victory panel appears.
+10. Confirm the victory panel shows road cell count, level cash, and total cash.
+11. Confirm cash increases by `road cell count * 10`.
+12. Press `Close` and confirm the panel closes without changing level.
+13. Restart the level.
+14. Win again, press `Next Level`, and confirm the next configured level loads.
+15. Run out of fuel before reaching the goal and confirm loss.
 
 ## Cash Test
 

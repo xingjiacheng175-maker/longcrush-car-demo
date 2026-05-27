@@ -21,6 +21,7 @@ This module covers the player-facing road-building rules:
 - Road pieces cannot cover blocks, moles, or the goal tile.
 - Road pieces can cover empty cells, cash cells, portal cells, and roller cells.
 - `R` rotates the selected road piece.
+- Road-piece offers are shown as clear grid previews in the side panel.
 - Yellow preview means valid placement; red preview means invalid placement.
 - The player wins when the goal becomes powered.
 - The player loses if fuel reaches `0` before the goal is powered.
@@ -57,6 +58,8 @@ Most gameplay logic is currently in `scripts/Main.gd`:
 - shape library and rotation,
 - `_is_placement_valid`,
 - `_on_cell_pressed`,
+- `_refresh_pieces`,
+- `_make_piece_preview`,
 - `_count_score_road_cells`,
 - `_get_completion_cash_bonus`,
 - `_refresh_hud`,
